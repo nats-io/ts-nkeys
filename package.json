@@ -1,0 +1,36 @@
+{
+  "name": "ts-nkeys",
+  "version": "0.0.1",
+  "description": "A public-key signature system based on Ed25519 for the NATS ecosystem in typescript for ts-nats and node-nats",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha -r ts-node/register test/**/*.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com//nats-io/ts-nkeys"
+  },
+  "keywords": [
+    "nats",
+    "Ed25519",
+    "node",
+    "typescript"
+  ],
+  "author": "The NATS Authors",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/chai": "^4.1.2",
+    "@types/mocha": "^5.0.0",
+    "@types/node": "^9.6.1",
+    "chai": "^4.1.2",
+    "mocha": "^5.0.5",
+    "ts-node": "^5.0.1",
+    "typescript": "^2.8.1"
+  },
+  "dependencies": {
+    "base32-decode": "^1.0.0",
+    "base32-encode": "^1.0.0",
+    "npm": "^5.8.0",
+    "tweetnacl": "^1.0.0"
+  }
+}
