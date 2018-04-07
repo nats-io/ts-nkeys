@@ -13,151 +13,105 @@
  * limitations under the License.
  */
 
-import {Prefix} from "./prefix";
-import ed25519 = require('tweetnacl')
-import {TokenCodec, Token} from "./strkey";
-import {NKeysError, NKeysErrorCode} from "./errors";
+
+import {KP} from "./kp";
 import {PublicKey} from "./public";
-import {SignKeyPair} from "tweetnacl";
+import {NKeysError, NKeysErrorCode} from "./errors";
+import {Codec, SeedDecode} from "./codec";
+import {Prefix} from "./prefix";
+import {Prefixes} from "../lib/src/prefix";
+import ed25519 = require('tweetnacl');
+
+export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
+    return new Promise((resolve, reject) => {
+        if (!seed) {
+            seed = Buffer.from(ed25519.randomBytes(32).buffer);
+        }
+        if (!Buffer.isBuffer(seed)) {
+            reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
+        }
+
+        let kp = ed25519.sign.keyPair.fromSeed(seed);
+        return Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer))
+            .then((str: string) => {
+                resolve(new KP(str));
+            });
+    })
+}
+
+export function createAccount(src?: Buffer): Promise<KeyPair> {
+    return createPair(Prefix.Account, src);
+}
+
+export function createUser(src?: Buffer): Promise<KeyPair> {
+    return createPair(Prefix.User, src);
+}
+
+export function createCluster(src?: Buffer): Promise<KeyPair> {
+    return createPair(Prefix.Cluster, src);
+}
+
+export function createServer(src?: Buffer): Promise<KeyPair> {
+    return createPair(Prefix.Server, src);
+}
+
+export function fromPublic(src: string): Promise<KeyPair> {
+    return new Promise((resolve, reject) => {
+        return Codec.decode(src)
+            .then((raw: Buffer) => {
+                let prefix = Prefixes.parsePrefix(raw.readUInt8(0))
+                if (Prefixes.isValidPublicPrefix(prefix)) {
+                    resolve(new PublicKey(src));
+                }
+                reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
+            })
+    });
+}
+
+export function fromSeed(src: string): Promise<KeyPair> {
+    return new Promise((resolve, reject) => {
+        Codec.decodeSeed(src)
+            .then((sd: SeedDecode) => {
+                resolve(new KP(src))
+            })
+    });
+}
+
+
 
 export interface KeyPair {
     /**
      * Returns the public key associated with the KeyPair
-     * @returns {string | Error}
+     * @returns {Promise<string>}
      */
-    getPublicKey(): string | Error;
+    getPublicKey(): Promise<string>;
 
     /**
      * Returns the private key associated with the KeyPair
-     * @returns {string | Error}
+     * @returns {Promise<string>}
      */
-    getPrivateKey(): string | Error;
+    getPrivateKey(): Promise<string>;
 
     /**
      * Returns the PrivateKey's seed.
-     * @returns {string | Error}
+     * @returns {Promise<string>}
      */
-    getSeed() : string | Error;
+    getSeed() : Promise<string>;
 
     /**
      * Returns the digital signature of signing the input with the
      * the KeyPair's private key.
      * @param {Buffer} input
-     * @returns {Buffer | Error}
+     * @returns {Promise<Buffer>}
      */
-    sign(input: Buffer): Buffer | Error;
+    sign(input: Buffer): Promise<Buffer>;
 
     /**
      * Returns true if the signature can be verified with the KeyPair
      * @param {Buffer} input
      * @param {Buffer} sig
-     * @returns {boolean}
+     * @returns {Promise<boolean>}
      */
-    verify(input: Buffer, sig: Buffer) : boolean;
-}
-
-
-export class KP implements KeyPair {
-    seed: string;
-
-    constructor(seed: string) {
-        this.seed = seed;
-    }
-
-    getRawSeed() : Buffer | Error {
-        let t = Token.decode(this.seed, true);
-        return t.getKey();
-    }
-
-    getKeys(): SignKeyPair | Error {
-        let raw = this.getRawSeed();
-        if(raw instanceof Error) {
-            return raw;
-        }
-        return ed25519.sign.keyPair.fromSecretKey(raw.slice(1));
-    }
-
-    getPrivateKey(): string | Error {
-        let skp = this.getKeys();
-        if(skp instanceof Error) {
-            return skp;
-        }
-        return TokenCodec.encode(Prefix.Private, Buffer.from(skp.secretKey));
-    }
-
-    getPublicKey(): string | Error {
-        let t = Token.decode(this.seed, true);
-        let raw = t.getKey().slice(1);
-        let kp = ed25519.sign.keyPair.fromSecretKey(raw);
-        return TokenCodec.encode(t.getPublic(), Buffer.from(kp.publicKey));
-    }
-
-    getSeed(): string | Error {
-        return this.seed;
-    }
-
-    sign(input: Buffer): Buffer | Error {
-        let skp = this.getKeys();
-        if(skp instanceof Error) {
-            return skp;
-        }
-        return Buffer.from(ed25519.sign.detached(input, skp.secretKey));
-    }
-
-    verify(input: Buffer, sig: Buffer): boolean {
-        let skp = this.getKeys();
-        if (skp instanceof Error) {
-            return false;
-        }
-        return ed25519.sign.detached.verify(input, sig, skp.publicKey);
-    }
-
-    private static createPair(prefix: Prefix, seed?: Buffer) : KeyPair | Error {
-        if(!seed) {
-            seed = Buffer.from(ed25519.randomBytes(32).buffer);
-        }
-        if(!Buffer.isBuffer(seed)){
-            return new NKeysError(NKeysErrorCode.InvalidPublicKey);
-        }
-
-        let kp = ed25519.sign.keyPair.fromSeed(seed);
-        let es = TokenCodec.encodeSeed(prefix, Buffer.from(kp.secretKey));
-        if(es instanceof Error) {
-            return es;
-        }
-        return new KP(es);
-    }
-
-    static createAccount(src?: Buffer) : KeyPair | Error {
-        return KP.createPair(Prefix.Account, src);
-    }
-
-    static createUser(src?: Buffer) : KeyPair | Error {
-        return KP.createPair(Prefix.User, src);
-    }
-
-    static createCluster(src?: Buffer) : KeyPair | Error {
-        return KP.createPair(Prefix.Cluster, src);
-    }
-
-    static createServer(src?: Buffer) : KeyPair | Error {
-        return KP.createPair(Prefix.Server, src);
-    }
-
-    static fromPublic(src: string) : KeyPair | Error {
-        let t = Token.decode(src, false);
-        if(!t.hasPublicPrefix()) {
-            return new NKeysError(NKeysErrorCode.InvalidPublicKey)
-        }
-        return new PublicKey(src);
-    }
-
-    static fromSeed(src: string) : KeyPair | Error {
-        let t = Token.decode(src, true);
-        if(t instanceof Error) {
-            return t;
-        }
-        return new KP(src);
-    }
+    verify(input: Buffer, sig: Buffer) : Promise<boolean>;
 }
 

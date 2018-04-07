@@ -41,12 +41,17 @@ export class Prefixes {
             || prefix == Prefix.User;
     }
 
+    static startsWithValidPrefix(s: string) {
+        let c = s[0];
+        return c == 'S' || c == 'P' || c == 'N' || c == 'C' || c == 'A' || c == 'U';
+    }
+
     static isValidPrefix(prefix: Prefix) : boolean {
         let v = this.parsePrefix(prefix);
         return v != -1;
     }
 
-    static parsePrefix(v: number) {
+    static parsePrefix(v: number) : Prefix {
         switch (v) {
             case Prefix.Seed:
                 return Prefix.Seed;

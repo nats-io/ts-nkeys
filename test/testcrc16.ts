@@ -21,20 +21,20 @@ import { crc16 } from '../src/crc16';
 describe('CRC16', ()=> {
     it('should return [0xC8, 0xB2] given [0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]', () => {
         const buf = new Uint8Array([0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]);
-        const crc = crc16.checksum(Buffer.from(buf));
+        const crc = crc16.checksum(Buffer.from(buf.buffer));
         expect(crc).to.eql(51378);
     });
 
     it('should validate [0xC8, 0xB2] given [0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]', () => {
         const buf = new Uint8Array([0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]);
-        const ok = crc16.validate(Buffer.from(buf), 51378);
+        const ok = crc16.validate(Buffer.from(buf.buffer), 51378);
         expect(ok).to.be.true;
 
     });
 
     it('should reject [0xCA, 0xB2] given [0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]', () => {
         const buf = new Uint8Array([0x41, 0x4C, 0x42, 0x45, 0x52, 0x54, 0x4F]);
-        const ok = crc16.validate(Buffer.from(buf), 12345);
+        const ok = crc16.validate(Buffer.from(buf.buffer), 12345);
         expect(ok).to.be.false;
     });
 });

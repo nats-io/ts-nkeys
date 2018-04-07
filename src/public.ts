@@ -15,8 +15,8 @@
 
 import {KeyPair} from "./keypair";
 import {NKeysError, NKeysErrorCode} from "./errors";
-import {TokenCodec} from "./strkey";
 import ed25519 = require('tweetnacl')
+import {Codec} from "./codec";
 
 /**
  * KeyPair capable of verifying only
@@ -28,27 +28,36 @@ export class PublicKey implements KeyPair {
         this.publicKey = publicKey;
     }
 
-    getPublicKey(): string | Error {
-        return this.publicKey;
+    getPublicKey(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            resolve(this.publicKey);
+        });
     }
 
-    getPrivateKey(): string | Error {
-        return new NKeysError(NKeysErrorCode.PublicKeyOnly);
+    getPrivateKey(): Promise<string> {
+        return new Promise((resolve,reject) => {
+            reject(new NKeysError(NKeysErrorCode.PublicKeyOnly));
+        });
     }
 
-    getSeed(): string | Error {
-        return new NKeysError(NKeysErrorCode.PublicKeyOnly);
+    getSeed(): Promise<string> {
+        return new Promise((resolve,reject) => {
+            reject(new NKeysError(NKeysErrorCode.PublicKeyOnly))
+        });
     }
 
-    sign(input: Buffer): Buffer | Error {
-        return new NKeysError(NKeysErrorCode.CannotSign);
+    sign(input: Buffer): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            reject(new NKeysError(NKeysErrorCode.CannotSign));
+        });
     }
 
-    verify(input: Buffer, sig: Buffer): boolean {
-        let raw = TokenCodec.decode(this.publicKey);
-        if(raw instanceof Error) {
-            return false;
-        }
-        return ed25519.sign.detached.verify(input, sig, raw.slice(1))
+    verify(input: Buffer, sig: Buffer): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            return Codec.decode(this.publicKey)
+                .then((buf: Buffer) => {
+                   resolve(ed25519.sign.detached.verify(input, sig, buf.slice(1)));
+                });
+        });
     }
 }
