@@ -27,18 +27,25 @@ export class KP implements KeyPair {
 
     getRawSeed(): Promise<Buffer> {
         return new Promise((resolve, reject) => {
-            return Codec.decodeSeed(this.seed)
-                .then((ds: SeedDecode) => {
-                    resolve(ds.buf);
-                });
+        Codec.decodeSeed(this.seed)
+            .then((ds: SeedDecode) => {
+                resolve(ds.buf);
+            })
+            .catch((err: Error) => {
+                reject(err);
+            });
         });
     }
 
     getKeys(): Promise<SignKeyPair> {
         return new Promise((resolve, reject) => {
-            return this.getRawSeed()
+            this.getRawSeed()
                 .then((raw: Buffer) => {
-                    resolve(ed25519.sign.keyPair.fromSecretKey(raw));
+                    let skp = ed25519.sign.keyPair.fromSecretKey(raw);
+                    resolve(skp);
+                })
+                .catch((err: Error) => {
+                    reject(err);
                 });
         })
     }
@@ -51,40 +58,56 @@ export class KP implements KeyPair {
 
     getPublicKey(): Promise<string> {
         return new Promise((resolve, reject) => {
-            return Codec.decodeSeed(this.seed)
+            Codec.decodeSeed(this.seed)
                 .then((ds: SeedDecode) => {
                     let pub = ed25519.sign.keyPair.fromSecretKey(ds.buf);
-                    resolve(Codec.encode(ds.prefix, Buffer.from(pub.publicKey.buffer)));
+                    Codec.encode(ds.prefix, Buffer.from(pub.publicKey.buffer))
+                        .then((pk: string) => {
+                            resolve(pk);
+                        });
+                })
+                .catch((err: Error) => {
+                    reject(err);
                 });
         });
     }
 
     getPrivateKey(): Promise<string> {
         return new Promise((resolve, reject) => {
-            return this.getKeys()
+            this.getKeys()
                 .then((kp: SignKeyPair) => {
-                    resolve(Codec.encode(Prefix.Private, Buffer.from(kp.secretKey.buffer)))
+                    Codec.encode(Prefix.Private, Buffer.from(kp.secretKey.buffer))
+                        .then((pk: string) => {
+                           resolve(pk);
+                        });
                 })
+                .catch((err: Error) => {
+                    reject(err);
+                });
         });
     }
 
 
     sign(input: Buffer): Promise<Buffer> {
         return new Promise((resolve, reject) => {
-            return this.getKeys()
+            this.getKeys()
                 .then((kp: SignKeyPair) => {
                     let a = ed25519.sign.detached(input, kp.secretKey);
                     resolve(Buffer.from(a.buffer));
+                }).catch((err: Error) => {
+                    reject(err);
                 });
         });
     }
 
     verify(input: Buffer, sig: Buffer): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            return this.getKeys()
+            this.getKeys()
                 .then((sk: SignKeyPair) => {
                     let ok = ed25519.sign.detached.verify(input, sig, sk.publicKey);
                     resolve(ok);
+                }).catch((err: Error) => {
+                    reject(err);
                 });
         });
     }

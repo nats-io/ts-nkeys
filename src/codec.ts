@@ -37,10 +37,12 @@ export class Codec {
         return new Promise((resolve,reject)=> {
             if(! Buffer.isBuffer(src)) {
                 reject(new NKeysError(NKeysErrorCode.SerializationError));
+                return;
             }
 
             if (!Prefixes.isValidPrefix(prefix)) {
                 reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
+                return;
             }
 
             // offsets
@@ -69,10 +71,22 @@ export class Codec {
         return new Promise((resolve,reject)=> {
             if(! Prefixes.startsWithValidPrefix(src)) {
                 reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
+                return;
             }
-            let raw = Buffer.from(b32dec(src, 'RFC3548'));
-            if(raw.byteLength < 3) {
+
+            let buf: ArrayBuffer;
+            try{
+                buf = b32dec(src, 'RFC3548');
+            }
+            catch(ex) {
+                reject(new NKeysError(NKeysErrorCode.InvalidEncoding, ex));
+                return;
+            }
+
+            let raw = Buffer.from(buf);
+            if (raw.byteLength < 3) {
                 reject(new NKeysError(NKeysErrorCode.InvalidEncoding));
+                return;
             }
 
             let checkOffset = raw.byteLength - 2;
@@ -81,39 +95,52 @@ export class Codec {
             let payload = raw.slice(0, checkOffset);
             if (!crc16.validate(payload, checksum)) {
                 reject(new NKeysError(NKeysErrorCode.InvalidChecksum));
+                return;
             }
             resolve(payload);
         });
     }
 
-    static decodeExpectingPrefix(expected: Prefix, src: string) : Promise<Buffer> {
-        return new Promise((resolve,reject)=> {
-            return Codec.decode(src)
-                .then((buf: Buffer) =>  {
-                    if(buf[0] != expected) {
+    static decodeExpectingPrefix(expected: Prefix, src: string): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            if(! Prefixes.isValidPrefix(expected)) {
+                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
+                return;
+            }
+            Codec.decode(src)
+                .then((buf: Buffer) => {
+                    if (buf[0] != expected) {
                         reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
+                        return;
                     }
                     resolve(buf.slice(1))
-            });
+                }).catch((err: Error) => {
+                    reject(err);
+                });
         });
     }
 
 
     static decodeSeed(src: string): Promise<SeedDecode> {
         return new Promise((resolve,reject) => {
-            return Codec.decode(src)
+            Codec.decode(src)
                 .then((raw: Buffer) => {
                     if(raw.byteLength < 4) {
                         reject(new NKeysError(NKeysErrorCode.InvalidEncoding));
+                        return;
                     }
                     let prefix = Codec.decodePrefix(raw);
                     if (prefix[0] != Prefix.Seed) {
                         reject(new NKeysError(NKeysErrorCode.InvalidSeed));
+                        return;
                     }
                     if (!Prefixes.isValidPublicPrefix(prefix[1])) {
                         reject(new NKeysError(NKeysErrorCode.InvalidSeed));
+                        return;
                     }
                     resolve({buf: raw.slice(2), prefix: prefix[1]})
+                }).catch((err: Error) => {
+                    reject(err);
                 });
         });
     }
@@ -122,12 +149,15 @@ export class Codec {
         return new Promise((resolve,reject) => {
             if(! Buffer.isBuffer(src)) {
                 reject(new NKeysError(NKeysErrorCode.SerializationError));
+                return;
             }
             if(! Prefixes.isValidPublicPrefix(role)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte))
+                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
+                return;
             }
             if(src.byteLength != ed25519.sign.secretKeyLength) {
                 reject(new NKeysError(NKeysErrorCode.InvalidSeedLen));
+                return;
             }
             // offsets for this token
             let payloadOffset = 2;

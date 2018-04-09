@@ -37,24 +37,27 @@ export class PublicKey implements KeyPair {
     getPrivateKey(): Promise<string> {
         return new Promise((resolve,reject) => {
             reject(new NKeysError(NKeysErrorCode.PublicKeyOnly));
+            return;
         });
     }
 
     getSeed(): Promise<string> {
         return new Promise((resolve,reject) => {
-            reject(new NKeysError(NKeysErrorCode.PublicKeyOnly))
+            reject(new NKeysError(NKeysErrorCode.PublicKeyOnly));
+            return;
         });
     }
 
     sign(input: Buffer): Promise<Buffer> {
         return new Promise((resolve, reject) => {
             reject(new NKeysError(NKeysErrorCode.CannotSign));
+            return;
         });
     }
 
     verify(input: Buffer, sig: Buffer): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            return Codec.decode(this.publicKey)
+            Codec.decode(this.publicKey)
                 .then((buf: Buffer) => {
                    resolve(ed25519.sign.detached.verify(input, sig, buf.slice(1)));
                 });

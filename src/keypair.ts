@@ -19,7 +19,7 @@ import {PublicKey} from "./public";
 import {NKeysError, NKeysErrorCode} from "./errors";
 import {Codec, SeedDecode} from "./codec";
 import {Prefix} from "./prefix";
-import {Prefixes} from "../lib/src/prefix";
+import {Prefixes} from "./prefix";
 import ed25519 = require('tweetnacl');
 
 export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
@@ -29,12 +29,16 @@ export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
         }
         if (!Buffer.isBuffer(seed)) {
             reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
+            return;
         }
 
         let kp = ed25519.sign.keyPair.fromSeed(seed);
-        return Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer))
+        Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer))
             .then((str: string) => {
                 resolve(new KP(str));
+            }).catch((err: Error) => {
+                reject(err);
+                return;
             });
     })
 }
@@ -57,14 +61,18 @@ export function createServer(src?: Buffer): Promise<KeyPair> {
 
 export function fromPublic(src: string): Promise<KeyPair> {
     return new Promise((resolve, reject) => {
-        return Codec.decode(src)
+        Codec.decode(src)
             .then((raw: Buffer) => {
                 let prefix = Prefixes.parsePrefix(raw.readUInt8(0))
                 if (Prefixes.isValidPublicPrefix(prefix)) {
                     resolve(new PublicKey(src));
                 }
                 reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
+                return;
             })
+            .catch((err: Error) => {
+                reject(err);
+            });
     });
 }
 
@@ -73,7 +81,9 @@ export function fromSeed(src: string): Promise<KeyPair> {
         Codec.decodeSeed(src)
             .then((sd: SeedDecode) => {
                 resolve(new KP(src))
-            })
+            }).catch((err: Error) => {
+                reject(err);
+            });
     });
 }
 

@@ -19,6 +19,7 @@ import {Codec, SeedDecode} from '../src/codec';
 import * as crypto from "crypto";
 import {Prefix} from "../src/prefix";
 import {NKeysError, NKeysErrorCode} from "../src/errors";
+import * as assert from "assert";
 
 describe('Test Codec', () => {
 
@@ -97,6 +98,30 @@ describe('Test Codec', () => {
                 expect(seed.prefix).to.be.equal(Prefix.Account);
                 expect(seed.buf).to.be.eql(rand);
             })
+    });
+
+    it('should fail to decode non-base32', () => {
+        Codec.decode("foo!")
+            .then((buf: Buffer) => {
+                assert.fail(buf, "", "buffer was not expected");
+            })
+            .catch((err: Error) => {
+                expect(err).to.be.instanceof(Error);
+                let nerr : NKeysError = err as NKeysError;
+                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
+            });
+    });
+
+    it('should fail to short string', () => {
+        Codec.decode("OK")
+            .then((buf: Buffer) => {
+                assert.fail(buf, "", "buffer was not expected");
+            })
+            .catch((err: Error) => {
+                expect(err).to.be.instanceof(Error);
+                let nerr : NKeysError = err as NKeysError;
+                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
+            });
     });
 });
 
