@@ -22,6 +22,8 @@ import {Prefix} from "./prefix";
 import {Prefixes} from "./prefix";
 import ed25519 = require('tweetnacl');
 
+export const VERSION = "0.0.1";
+
 export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
     return new Promise((resolve, reject) => {
         if (!seed) {
