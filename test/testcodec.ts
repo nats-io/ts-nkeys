@@ -17,9 +17,8 @@ import 'mocha';
 import {expect} from 'chai';
 import {Codec, SeedDecode} from '../src/codec';
 import * as crypto from "crypto";
-import {Prefix} from "../src/prefix";
-import {NKeysError, NKeysErrorCode} from "../src/errors";
 import * as assert from "assert";
+import {NKeysError, NKeysErrorCode, Prefix} from "../src/nkeys";
 
 describe('Test Codec', () => {
 

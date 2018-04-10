@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-import {KeyPair} from "./keypair";
-import {NKeysError, NKeysErrorCode} from "./errors";
 import ed25519 = require('tweetnacl')
 import {Codec} from "./codec";
+import {KeyPair, NKeysError, NKeysErrorCode} from "./nkeys";
 
 /**
  * KeyPair capable of verifying only

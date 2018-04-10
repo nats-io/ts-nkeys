@@ -2,7 +2,8 @@
   "name": "ts-nkeys",
   "version": "0.0.1",
   "description": "A public-key signature system based on Ed25519 for the NATS ecosystem in typescript for ts-nats and node-nats",
-  "main": "index.js",
+  "main": "lib/nkeys.js",
+  "types": "lib/nkeys.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.ts"
   },

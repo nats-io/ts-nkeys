@@ -13,19 +13,12 @@
  * limitations under the License.
  */
 
-import {Prefix, Prefixes} from "./prefix";
-import {NKeysError, NKeysErrorCode} from "./errors";
 import {crc16} from "./crc16";
 import b32enc = require('base32-encode');
 import b32dec = require('base32-decode');
 import ed25519 = require('tweetnacl');
+import {NKeysError, NKeysErrorCode, Prefix, Prefixes} from "./nkeys";
 
-export interface ParsedToken {
-    getPrefix() : Prefix;
-    getPublic() : Prefix | undefined;
-    getKey() : Buffer;
-    is(prefix: Prefix) : boolean;
-}
 
 export interface SeedDecode {
     prefix: Prefix;

@@ -17,25 +17,34 @@ import 'mocha';
 import {expect} from 'chai'
 
 import ed25519 = require('tweetnacl');
-import * as nkeys from "../src/keypair";
-import {createAccount, fromPublic, KeyPair} from "../src/keypair";
-import {NKeysError, NKeysErrorCode} from "../src/errors";
 import * as assert from "assert";
-import {Prefix} from "../src/prefix";
 import {KP} from "../src/kp";
 import {SignKeyPair} from "tweetnacl";
 import {Codec, SeedDecode} from "../src/codec";
+import {
+    createAccount,
+    createCluster,
+    createPair,
+    createServer,
+    createUser,
+    fromPublic,
+    fromSeed,
+    KeyPair,
+    NKeysError,
+    NKeysErrorCode,
+    Prefix
+} from "../src/nkeys";
 
 
 
 
 describe('Test KeyPair', ()=> {
     it('Test Account', () => {
-        let account: nkeys.KeyPair;
+        let account: KeyPair;
         let data = Buffer.from("HelloWorld");
 
-        return nkeys.createAccount()
-            .then((acc: nkeys.KeyPair) => {
+        return createAccount()
+            .then((acc: KeyPair) => {
                 expect(acc).not.to.be.null;
                 account = acc;
                 return Promise.all([
@@ -67,8 +76,8 @@ describe('Test KeyPair', ()=> {
     });
 
     it('Test User', () => {
-        return nkeys.createUser()
-            .then((u: nkeys.KeyPair) => {
+        return createUser()
+            .then((u: KeyPair) => {
                 return u.getPublicKey();
             }).then((pub: string) => {
                 expect(pub).to.be.a('string');
@@ -77,8 +86,8 @@ describe('Test KeyPair', ()=> {
     });
 
     it('Test Cluster', () => {
-        return nkeys.createCluster()
-            .then((c: nkeys.KeyPair) => {
+        return createCluster()
+            .then((c: KeyPair) => {
                 return c.getPublicKey();
             }).then((pub: string) => {
                 expect(pub).to.be.a('string');
@@ -87,8 +96,8 @@ describe('Test KeyPair', ()=> {
     });
 
     it('Test Server', () => {
-        return nkeys.createServer()
-            .then((s: nkeys.KeyPair) => {
+        return createServer()
+            .then((s: KeyPair) => {
                 return s.getPublicKey();
             }).then((pub: string) => {
                 expect(pub).to.be.a('string');
@@ -97,14 +106,14 @@ describe('Test KeyPair', ()=> {
     });
 
     it('from public kp cannot get private keys', () => {
-        let user: nkeys.KeyPair;
-        return nkeys.createUser()
-            .then((u: nkeys.KeyPair) => {
+        let user: KeyPair;
+        return createUser()
+            .then((u: KeyPair) => {
                 user = u;
                 return user.getPublicKey();
             }).then((pubkey: string) => {
                 return fromPublic(pubkey);
-            }).then((kp: nkeys.KeyPair) => {
+            }).then((kp: KeyPair) => {
                 return kp.getPrivateKey()
             }).then((pk: string) => {
                 assert.fail(pk, "", "public key was not expected");
@@ -116,14 +125,14 @@ describe('Test KeyPair', ()=> {
     });
 
     it('from public kp cannot get seed', () => {
-        let user: nkeys.KeyPair;
-        return nkeys.createUser()
-            .then((u: nkeys.KeyPair) => {
+        let user: KeyPair;
+        return createUser()
+            .then((u: KeyPair) => {
                 user = u;
                 return user.getPublicKey();
             }).then((pubkey: string) => {
                 return fromPublic(pubkey);
-            }).then((kp: nkeys.KeyPair) => {
+            }).then((kp: KeyPair) => {
                 return kp.getSeed()
             }).then((pk: string) => {
                 assert.fail(pk, "", "seed was not expected");
@@ -135,20 +144,20 @@ describe('Test KeyPair', ()=> {
     });
 
     it('Test fromPublic() can verify', () => {
-        let user: nkeys.KeyPair;
-        let pubUser1: nkeys.KeyPair;
-        let pubUser2: nkeys.KeyPair;
+        let user: KeyPair;
+        let pubUser1: KeyPair;
+        let pubUser2: KeyPair;
         let data = Buffer.from("HelloWorld");
 
-        return nkeys.createUser()
-            .then((u: nkeys.KeyPair) => {
+        return createUser()
+            .then((u: KeyPair) => {
                 user = u;
                 return user.getPublicKey();
             }).then((pubKey: string) => {
                 return Promise.all([
                     fromPublic(pubKey),
                     fromPublic(pubKey)]);
-            }).then((kp: nkeys.KeyPair[]) => {
+            }).then((kp: KeyPair[]) => {
                 pubUser1 = kp[0];
                 pubUser2 = kp[1];
                 return Promise.all([
@@ -172,12 +181,12 @@ describe('Test KeyPair', ()=> {
     });
 
     it('Test fromSeed', () => {
-        let account: nkeys.KeyPair;
+        let account: KeyPair;
         let data = Buffer.from("HelloWorld");
         let signature: Buffer;
 
-        return nkeys.createAccount()
-            .then((a: nkeys.KeyPair) => {
+        return createAccount()
+            .then((a: KeyPair) => {
                 account = a;
                 return account.sign(data)
             }).then ((sig: Buffer) => {
@@ -188,8 +197,8 @@ describe('Test KeyPair', ()=> {
                 expect(seed[0]).to.be.equal('S');
                 expect(seed[1]).to.be.equal('A');
 
-                return nkeys.fromSeed(seed)
-            }).then((a2: nkeys.KeyPair) => {
+                return fromSeed(seed)
+            }).then((a2: KeyPair) => {
                 return a2.verify(data, signature);
             }).then((ok: boolean) => {
                 expect(ok).to.be.true;
@@ -197,8 +206,8 @@ describe('Test KeyPair', ()=> {
     });
 
     it('should fail if key is empty', () => {
-        return nkeys.createPair(Prefix.User, Buffer.from([]))
-            .then((bad: nkeys.KeyPair) => {
+        return createPair(Prefix.User, Buffer.from([]))
+            .then((bad: KeyPair) => {
                 assert.fail(bad, "", "pair was not expected");
             })
             .catch((err: Error) => {
@@ -207,8 +216,8 @@ describe('Test KeyPair', ()=> {
     });
 
     it('should fail with non public prefix', () => {
-        return nkeys.createPair(Prefix.Private)
-            .then((bad: nkeys.KeyPair) => {
+        return createPair(Prefix.Private)
+            .then((bad: KeyPair) => {
                 assert.fail(bad, "", "pair was not expected");
             })
             .catch((err: Error) => {
@@ -270,8 +279,8 @@ describe('Test KeyPair', ()=> {
 
     function badKey(): Promise<string> {
         return new Promise((resolve,reject) => {
-            nkeys.createAccount()
-                .then((a: nkeys.KeyPair) => {
+            createAccount()
+                .then((a: KeyPair) => {
                     return a.getPublicKey();
                 })
                 .then((pk: string) => {
@@ -361,7 +370,7 @@ describe('Test KeyPair', ()=> {
     it('fromPublicKey should reject bad checksum', () => {
         badKey()
             .then((bpk: string) => {
-                nkeys.fromPublic(bpk)
+                fromPublic(bpk)
                     .then((kp: KeyPair) => {
                         assert.fail(kp, "", "decode was not expected");
                     })
@@ -374,9 +383,9 @@ describe('Test KeyPair', ()=> {
     });
 
     function generateBadSeed(): Promise<string> {
-        return new Promise((resolve,reject) => {
-            nkeys.createAccount()
-                .then((a: nkeys.KeyPair) => {
+        return new Promise((resolve) => {
+            createAccount()
+                .then((a: KeyPair) => {
                     return a.getSeed()
                 }).then((seed: string) => {
                 resolve(seed[0] + 'S' + seed.slice(2));
@@ -385,8 +394,8 @@ describe('Test KeyPair', ()=> {
     }
 
     it('should reject decoding seed bad checksum', () => {
-        nkeys.createAccount()
-            .then((a: nkeys.KeyPair) => {
+        createAccount()
+            .then((a: KeyPair) => {
                 return a.getPublicKey()
             })
             .then((bpk: string) => {
@@ -421,7 +430,7 @@ describe('Test KeyPair', ()=> {
     it('fromSeed should reject decoding bad seed prefix', () => {
         generateBadSeed()
             .then((seed: string) => {
-                nkeys.fromSeed(seed)
+                fromSeed(seed)
                     .then((kp: KeyPair) => {
                         assert.fail(kp, "", "decode was not expected");
                     })
@@ -436,7 +445,7 @@ describe('Test KeyPair', ()=> {
     it('fromSeed should reject decoding bad public key', () => {
         generateBadSeed()
             .then((seed: string) => {
-                nkeys.fromPublic(seed)
+                fromPublic(seed)
                     .then((kp: KeyPair) => {
                         assert.fail(kp, "", "decode was not expected");
                     })
@@ -447,6 +456,4 @@ describe('Test KeyPair', ()=> {
                     });
             })
     });
-
-
 });

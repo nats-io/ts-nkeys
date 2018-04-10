@@ -14,10 +14,9 @@
  */
 
 import {SignKeyPair} from "tweetnacl";
-import {KeyPair} from "./keypair";
-import {Prefix} from "./prefix";
 import {Codec, SeedDecode} from "./codec";
 import * as ed25519 from "tweetnacl";
+import {KeyPair, Prefix} from "./nkeys";
 
 export class KP implements KeyPair {
     seed: string;
@@ -51,7 +50,7 @@ export class KP implements KeyPair {
     }
 
     getSeed(): Promise<string> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             resolve(this.seed);
         });
     }
