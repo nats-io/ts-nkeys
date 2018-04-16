@@ -77,7 +77,7 @@ export function fromPublic(src: string): Promise<KeyPair> {
 export function fromSeed(src: string): Promise<KeyPair> {
     return new Promise((resolve, reject) => {
         Codec.decodeSeed(src)
-            .then((sd: SeedDecode) => {
+            .then((_: SeedDecode) => {
                 resolve(new KP(src))
             }).catch((err: Error) => {
             reject(err);

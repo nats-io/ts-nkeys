@@ -28,34 +28,34 @@ export class PublicKey implements KeyPair {
     }
 
     getPublicKey(): Promise<string> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _) => {
             resolve(this.publicKey);
         });
     }
 
     getPrivateKey(): Promise<string> {
-        return new Promise((resolve,reject) => {
+        return new Promise((_,reject) => {
             reject(new NKeysError(NKeysErrorCode.PublicKeyOnly));
             return;
         });
     }
 
     getSeed(): Promise<string> {
-        return new Promise((resolve,reject) => {
+        return new Promise((_,reject) => {
             reject(new NKeysError(NKeysErrorCode.PublicKeyOnly));
             return;
         });
     }
 
-    sign(input: Buffer): Promise<Buffer> {
-        return new Promise((resolve, reject) => {
+    sign(_: Buffer): Promise<Buffer> {
+        return new Promise((_, reject) => {
             reject(new NKeysError(NKeysErrorCode.CannotSign));
             return;
         });
     }
 
     verify(input: Buffer, sig: Buffer): Promise<boolean> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _) => {
             Codec.decode(this.publicKey)
                 .then((buf: Buffer) => {
                    resolve(ed25519.sign.detached.verify(input, sig, buf.slice(1)));

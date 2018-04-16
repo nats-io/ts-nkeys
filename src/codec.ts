@@ -18,6 +18,7 @@ import b32enc = require('base32-encode');
 import b32dec = require('base32-decode');
 import ed25519 = require('tweetnacl');
 import {NKeysError, NKeysErrorCode, Prefix, Prefixes} from "./nkeys";
+import * as util from "./util";
 
 
 export interface SeedDecode {
@@ -26,6 +27,8 @@ export interface SeedDecode {
 }
 
 export class Codec {
+    static toArrayBuffer: util.ToArrayBuffer = util.toArrayBuffer();
+
     static encode(prefix: Prefix, src: Buffer): Promise<string> {
         return new Promise((resolve,reject)=> {
             if(! Buffer.isBuffer(src)) {
@@ -54,7 +57,7 @@ export class Codec {
             raw.writeUInt16LE(checksum, checkOffset);
 
             // generate a base32 string - remove the padding
-            let str = b32enc(raw.buffer, 'RFC3548');
+            let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
             str = str.replace(/=+$/, '');
             resolve(str);
         });
@@ -172,7 +175,7 @@ export class Codec {
 
             // generate a string
             // generate a base32 string - remove the padding
-            let str = b32enc(raw.buffer, 'RFC3548');
+            let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
             str = str.replace(/=+$/, '');
             resolve(str);
         });

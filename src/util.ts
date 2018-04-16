@@ -30,3 +30,35 @@ export function dump(buf: Buffer, msg?: string): void {
     }
     console.log(a.join('  '));
 }
+
+export interface ToArrayBuffer {
+    (buf: Buffer): ArrayBuffer;
+}
+
+function node6(buf: Buffer): ArrayBuffer {
+    // @ts-ignore
+    return buf;
+}
+
+function node8(buf: Buffer): ArrayBuffer {
+    return buf.buffer;
+}
+
+function parseNodeVersion() : number {
+    let ma = process.version.match(/^v(\d+).+/i);
+    if(ma && ma.length > 1) {
+        return parseInt(ma[1], 10);
+    }
+    return 0;
+}
+
+// Node < 8 needs different handling on how a Buffer
+// is converted to ArrayBuffer. These older nodes
+// don't have the '.buffer' property.
+export function toArrayBuffer(): ToArrayBuffer {
+    if(parseNodeVersion() < 8) {
+        return node6;
+    } else {
+        return node8;
+    }
+}
