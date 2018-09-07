@@ -13,14 +13,9 @@
  * limitations under the License.
  */
 
-import 'mocha';
-import {expect} from 'chai'
-
-import ed25519 = require('tweetnacl');
-import * as assert from "assert";
+import test from "ava";
 import {KP} from "../src/kp";
-import {SignKeyPair} from "tweetnacl";
-import {Codec, SeedDecode} from "../src/codec";
+import {Codec} from "../src/codec";
 import {
     createAccount,
     createCluster,
@@ -30,430 +25,322 @@ import {
     fromPublic,
     fromSeed,
     KeyPair,
-    NKeysError,
     NKeysErrorCode,
     Prefix
 } from "../src/nkeys";
+import ed25519 = require('tweetnacl');
+import {PublicKey} from "../src/public";
 
 
+test('Account', async (t) => {
+    let account = await createAccount();
+    t.truthy(account);
+
+    let seed = await account.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'A');
+
+    let publicKey = await account.getPublicKey();
+    t.is(typeof publicKey, 'string');
+    t.is(publicKey[0], 'A');
+
+    let privateKey = await account.getPrivateKey();
+    t.is(typeof privateKey, 'string');
+    t.is(privateKey[0], 'P');
 
 
-describe('Test KeyPair', ()=> {
-    it('Test Account', () => {
-        let account: KeyPair;
-        let data = Buffer.from("HelloWorld");
+    let data = Buffer.from("HelloWorld");
+    let sig = await account.sign(data);
+    t.is(sig.length, ed25519.sign.signatureLength);
+    t.true(await account.verify(data, sig));
 
-        return createAccount()
-            .then((acc: KeyPair) => {
-                expect(acc).not.to.be.null;
-                account = acc;
-                return Promise.all([
-                    account.getSeed(),
-                    account.getPublicKey(),
-                    account.getPrivateKey()
-                ]);
-            }).then((a: string[]) => {
-                let seed = a[0];
-                expect(seed).to.be.a('string');
-                expect(seed[0]).to.be.equal('S');
-                expect(seed[1]).to.be.equal('A');
+    let pk = await fromPublic(publicKey);
+    t.true(await pk.verify(data, sig));
 
-                let publicKey = a[1];
-                expect(publicKey).to.be.a('string');
-                expect(publicKey[0]).to.be.equal('A');
+    let sk = await fromSeed(seed);
+    t.true(await sk.verify(data, sig));
+});
 
-                let privateKey = a[2];
-                expect(privateKey).to.be.a('string');
-                expect(privateKey[0]).to.be.equal('P');
+test('User', async (t) => {
+    let user = await createUser();
+    t.truthy(user);
 
-                return account.sign(data);
-            }).then((sig: Buffer) => {
-                expect(sig).length(ed25519.sign.signatureLength);
-                return account.verify(data, sig)
-            }).then((ok: boolean) => {
-                expect(ok).to.be.true;
-            });
-    });
+    let seed = await user.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'U');
 
-    it('Test User', () => {
-        return createUser()
-            .then((u: KeyPair) => {
-                return u.getPublicKey();
-            }).then((pub: string) => {
-                expect(pub).to.be.a('string');
-                expect(pub[0]).to.be.equal('U');
-            });
-    });
+    let publicKey = await user.getPublicKey();
+    t.is(typeof publicKey, 'string');
+    t.is(publicKey[0], 'U');
 
-    it('Test Cluster', () => {
-        return createCluster()
-            .then((c: KeyPair) => {
-                return c.getPublicKey();
-            }).then((pub: string) => {
-                expect(pub).to.be.a('string');
-                expect(pub[0]).to.be.equal('C');
-            });
-    });
+    let privateKey = await user.getPrivateKey();
+    t.is(typeof privateKey, 'string');
+    t.is(privateKey[0], 'P');
 
-    it('Test Server', () => {
-        return createServer()
-            .then((s: KeyPair) => {
-                return s.getPublicKey();
-            }).then((pub: string) => {
-                expect(pub).to.be.a('string');
-                expect(pub[0]).to.be.equal('N');
-            });
-    });
 
-    it('from public kp cannot get private keys', () => {
-        let user: KeyPair;
-        return createUser()
-            .then((u: KeyPair) => {
-                user = u;
-                return user.getPublicKey();
-            }).then((pubkey: string) => {
-                return fromPublic(pubkey);
-            }).then((kp: KeyPair) => {
-                return kp.getPrivateKey()
-            }).then((pk: string) => {
-                assert.fail(pk, "", "public key was not expected");
-            }).catch((error: Error) => {
-                expect(error).to.be.instanceof(Error);
-                let nerr : NKeysError = error as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.PublicKeyOnly);
-            })
-    });
+    let data = Buffer.from("HelloWorld");
+    let sig = await user.sign(data);
+    t.is(sig.length, ed25519.sign.signatureLength);
+    t.true(await user.verify(data, sig));
 
-    it('from public kp cannot get seed', () => {
-        let user: KeyPair;
-        return createUser()
-            .then((u: KeyPair) => {
-                user = u;
-                return user.getPublicKey();
-            }).then((pubkey: string) => {
-                return fromPublic(pubkey);
-            }).then((kp: KeyPair) => {
-                return kp.getSeed()
-            }).then((pk: string) => {
-                assert.fail(pk, "", "seed was not expected");
-            }).catch((error: Error) => {
-                expect(error).to.be.instanceof(Error);
-                let nerr : NKeysError = error as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.PublicKeyOnly);
-            })
-    });
+    let pk = await fromPublic(publicKey);
+    t.true(await pk.verify(data, sig));
 
-    it('Test fromPublic() can verify', () => {
-        let user: KeyPair;
-        let pubUser1: KeyPair;
-        let pubUser2: KeyPair;
-        let data = Buffer.from("HelloWorld");
+    let sk = await fromSeed(seed);
+    t.true(await sk.verify(data, sig));
+});
 
-        return createUser()
-            .then((u: KeyPair) => {
-                user = u;
-                return user.getPublicKey();
-            }).then((pubKey: string) => {
-                return Promise.all([
-                    fromPublic(pubKey),
-                    fromPublic(pubKey)]);
-            }).then((kp: KeyPair[]) => {
-                pubUser1 = kp[0];
-                pubUser2 = kp[1];
-                return Promise.all([
-                    pubUser1.getPublicKey(),
-                    pubUser2.getPublicKey()
-                ]);
-            }).then((keys: string[]) => {
-                expect(keys[0]).to.equal(keys[1]);
-                return user.sign(data);
-            }).then((signature: Buffer) => {
-                return Promise.all([
-                    user.verify(data, signature),
-                    pubUser1.verify(data, signature),
-                    pubUser2.verify(data, signature)
-                ])
-            }).then((verifications: boolean[]) => {
-                expect(verifications[0]).to.be.true;
-                expect(verifications[1]).to.be.true;
-                expect(verifications[2]).to.be.true;
-            })
-    });
+test('Cluster', async (t) => {
+    let cluster = await createCluster();
+    t.truthy(cluster);
 
-    it('Test fromSeed', () => {
-        let account: KeyPair;
-        let data = Buffer.from("HelloWorld");
-        let signature: Buffer;
+    let seed = await cluster.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'C');
 
-        return createAccount()
-            .then((a: KeyPair) => {
-                account = a;
-                return account.sign(data)
-            }).then ((sig: Buffer) => {
-                signature = sig;
-                return account.getSeed();
-            }).then((seed: string) => {
-                expect(seed).to.be.a('string');
-                expect(seed[0]).to.be.equal('S');
-                expect(seed[1]).to.be.equal('A');
+    let publicKey = await cluster.getPublicKey();
+    t.is(typeof publicKey, 'string');
+    t.is(publicKey[0], 'C');
 
-                return fromSeed(seed)
-            }).then((a2: KeyPair) => {
-                return a2.verify(data, signature);
-            }).then((ok: boolean) => {
-                expect(ok).to.be.true;
-            })
-    });
+    let privateKey = await cluster.getPrivateKey();
+    t.is(typeof privateKey, 'string');
+    t.is(privateKey[0], 'P');
 
-    it('should fail if key is empty', () => {
-        return createPair(Prefix.User, Buffer.from([]))
-            .then((bad: KeyPair) => {
-                assert.fail(bad, "", "pair was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-            })
-    });
 
-    it('should fail with non public prefix', () => {
-        return createPair(Prefix.Private)
-            .then((bad: KeyPair) => {
-                assert.fail(bad, "", "pair was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-            })
-    });
+    let data = Buffer.from("HelloWorld");
+    let sig = await cluster.sign(data);
+    t.is(sig.length, ed25519.sign.signatureLength);
+    t.true(await cluster.verify(data, sig));
 
-    it('should fail getting keys on bad seed', () => {
+    let pk = await fromPublic(publicKey);
+    t.true(await pk.verify(data, sig));
+
+    let sk = await fromSeed(seed);
+    t.true(await sk.verify(data, sig));
+});
+
+test('Server', async (t) => {
+    let server = await createServer();
+    t.truthy(server);
+
+    let seed = await server.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'N');
+
+    let publicKey = await server.getPublicKey();
+    t.is(typeof publicKey, 'string');
+    t.is(publicKey[0], 'N');
+
+    let privateKey = await server.getPrivateKey();
+    t.is(typeof privateKey, 'string');
+    t.is(privateKey[0], 'P');
+
+
+    let data = Buffer.from("HelloWorld");
+    let sig = await server.sign(data);
+    t.is(sig.length, ed25519.sign.signatureLength);
+    t.true(await server.verify(data, sig));
+
+    let pk = await fromPublic(publicKey);
+    t.true(await pk.verify(data, sig));
+
+    let sk = await fromSeed(seed);
+    t.true(await sk.verify(data, sig));
+});
+
+
+test('from public kp cannot get private keys', async(t) => {
+    let user = await createUser();
+    let pubkey = await user.getPublicKey();
+    let fpk = await fromPublic(pubkey);
+    await t.throwsAsync(async () => {
+        await fpk.getPrivateKey();
+    }, {code: NKeysErrorCode.PublicKeyOnly});
+});
+
+test('from public kp cannot get seed', async (t) => {
+    let u = await createUser();
+    let pk = await u.getPublicKey();
+    let fpk = await fromPublic(pk);
+    await t.throwsAsync(async () => {
+        await fpk.getSeed();
+    }, {code: NKeysErrorCode.PublicKeyOnly});
+});
+
+test('Test fromPublic() can verify', async (t) => {
+    let user = await createUser();
+    let pk = await user.getPublicKey();
+    let fpk = await fromPublic(pk);
+    let data = Buffer.from("HelloWorld");
+    let signature = await user.sign(data);
+    t.true(await fpk.verify(data, signature));
+    t.true(await user.verify(data, signature));
+});
+
+test('Test fromSeed', async (t) => {
+    let account = await createAccount();
+    let data = Buffer.from("HelloWorld");
+    let signature = await account.sign(data);
+    t.true(await account.verify(data, signature));
+
+    let seed = await account.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'A');
+
+    let fseed = await fromSeed(seed);
+    t.true(await fseed.verify(data, signature));
+});
+
+test('should fail if key is empty', async (t) => {
+    await t.throwsAsync(async () => {
+        await createPair(Prefix.User, Buffer.from([]));
+    }, {message: 'bad seed size'});
+});
+
+test('should fail with non public prefix', async (t) => {
+    await t.throwsAsync(async () => {
+        await createPair(Prefix.Private);
+    }, {code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('should fail getting keys on bad seed', async(t) => {
+    await t.throwsAsync(async () => {
         let kp = new KP("SEEDBAD");
-        kp.getKeys()
-            .then((sp: SignKeyPair) => {
-                assert.fail(sp, "", "keys were not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-            })
-    });
+        await kp.getKeys();
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
 
-    it('should fail getting public key on bad seed', () => {
+test('should fail getting public key on bad seed', async(t) => {
+    await t.throwsAsync(async () => {
         let kp = new KP("SEEDBAD");
-        kp.getPublicKey()
-            .then((pk: string) => {
-                assert.fail(pk, "", "key was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-            })
-    });
+        await kp.getPublicKey();
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
 
-    it('should fail getting private key on bad seed', () => {
+test('should fail getting private key on bad seed', async (t) => {
+    await t.throwsAsync(async () => {
         let kp = new KP("SEEDBAD");
-        kp.getPrivateKey()
-            .then((pk: string) => {
-                assert.fail(pk, "", "key was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-            })
-    });
+        await kp.getPrivateKey();
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
 
-    it('should fail signing with bad seed', () => {
+test('should fail signing with bad seed', async (t) => {
+    await t.throwsAsync(async () => {
         let kp = new KP("SEEDBAD");
-        kp.sign(Buffer.from([]))
-            .then((sig: Buffer) => {
-                assert.fail(sig, "", "signature was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-            })
-    });
+        await kp.sign(Buffer.from([]));
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
 
-    function badKey(): Promise<string> {
-        return new Promise((resolve,reject) => {
-            createAccount()
-                .then((a: KeyPair) => {
-                    return a.getPublicKey();
-                })
-                .then((pk: string) => {
-                    resolve(pk.slice(0, pk.length-2) + "00");
-                })
-                .catch((err: Error) => {
-                    reject(err);
-                });
-            })
-    }
-
-    it('should reject decoding bad checksums', () => {
-        badKey()
-            .then((bpk: string) => {
-            Codec.decode(bpk)
-                .then((buf: Buffer) => {
-                    assert.fail(buf, "", "decode was not expected");
-                })
-                .catch((err: Error) => {
-                    expect(err).to.be.instanceof(Error);
-                    let nerr : NKeysError = err as NKeysError;
-                    expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidEncoding);
-                });
-        })
-    });
-
-    it('should reject decoding expected byte with bad checksum', () => {
-        badKey()
-            .then((bpk: string) => {
-                Codec.decodeExpectingPrefix(Prefix.User, bpk)
-                    .then((buf: Buffer) => {
-                        assert.fail(buf, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidEncoding);
-                    });
-            })
-    });
-
-    it('should reject decoding expected bad prefix', () => {
-        badKey()
-            .then((bpk: string) => {
-                Codec.decodeExpectingPrefix(3<<3, bpk)
-                    .then((buf: Buffer) => {
-                        assert.fail(buf, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
-                    });
-            })
-    });
-
-    it('should reject decoding expected bad checksum', () => {
-        badKey()
-            .then((bpk: string) => {
-                Codec.decodeExpectingPrefix(Prefix.Account, bpk)
-                    .then((buf: Buffer) => {
-                        assert.fail(buf, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidEncoding);
-                    });
-            })
-    });
-
-    it('should reject decoding seed with bad checksum', () => {
-        badKey()
-            .then((bpk: string) => {
-                Codec.decodeSeed(bpk)
-                    .then((sd: SeedDecode) => {
-                        assert.fail(sd, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidEncoding);
-                    });
-            })
-    });
-
-    it('fromPublicKey should reject bad checksum', () => {
-        badKey()
-            .then((bpk: string) => {
-                fromPublic(bpk)
-                    .then((kp: KeyPair) => {
-                        assert.fail(kp, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidEncoding);
-                    });
-            })
-    });
-
-    function generateBadSeed(): Promise<string> {
-        return new Promise((resolve) => {
-            createAccount()
-                .then((a: KeyPair) => {
-                    return a.getSeed()
-                }).then((seed: string) => {
-                resolve(seed[0] + 'S' + seed.slice(2));
-            });
-        });
-    }
-
-    it('should reject decoding seed bad checksum', () => {
+function badKey(): Promise<string> {
+    return new Promise((resolve,reject) => {
         createAccount()
             .then((a: KeyPair) => {
-                return a.getPublicKey()
+                return a.getPublicKey();
             })
-            .then((bpk: string) => {
-                Codec.decodeSeed(bpk)
-                    .then((sd: SeedDecode) => {
-                        assert.fail(sd, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidSeed);
-                    });
+            .then((pk: string) => {
+                resolve(pk.slice(0, pk.length-2) + "00");
             })
-    });
+            .catch((err: Error) => {
+                reject(err);
+            });
+        })
+}
+
+test('should reject decoding bad checksums', async (t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await Codec.decode(bk);
+    }, {code: NKeysErrorCode.InvalidEncoding});
+});
+
+test('should reject decoding expected byte with bad checksum', async(t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await Codec.decodeExpectingPrefix(Prefix.User, bk);
+    }, {code: NKeysErrorCode.InvalidEncoding});
+});
+
+test('should reject decoding expected bad prefix', async (t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await Codec.decodeExpectingPrefix(3<<3, bk);
+    }, {code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('should reject decoding expected bad checksum', async(t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await Codec.decodeExpectingPrefix(Prefix.Account, bk);
+    }, {code: NKeysErrorCode.InvalidEncoding});
+});
+
+test('should reject decoding seed with bad checksum', async (t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await Codec.decodeSeed(bk);
+    }, {code: NKeysErrorCode.InvalidEncoding});
+});
+
+test('fromPublicKey should reject bad checksum', async(t) => {
+    await t.throwsAsync(async () => {
+        let bk = await badKey();
+        await fromPublic(bk);
+    }, {code: NKeysErrorCode.InvalidEncoding});
+});
 
 
-    it('should reject decoding bad seed prefix', () => {
-        generateBadSeed()
-            .then((seed: string) => {
-                Codec.decodeSeed(seed)
-                    .then((sd: SeedDecode) => {
-                        assert.fail(sd, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-                    });
-            })
-    });
+test('should reject decoding seed bad checksum', async(t) => {
+    await t.throwsAsync(async () => {
+        let a = await createAccount();
+        let pk = await a.getPublicKey();
+        await Codec.decodeSeed(pk);
+    }, {code: NKeysErrorCode.InvalidSeed});
+});
 
-    it('fromSeed should reject decoding bad seed prefix', () => {
-        generateBadSeed()
-            .then((seed: string) => {
-                fromSeed(seed)
-                    .then((kp: KeyPair) => {
-                        assert.fail(kp, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-                    });
-            })
+function generateBadSeed(): Promise<string> {
+    return new Promise((resolve) => {
+        createAccount()
+            .then((a: KeyPair) => {
+                return a.getSeed()
+            }).then((seed: string) => {
+            resolve(seed[0] + 'S' + seed.slice(2));
+        });
     });
+}
 
-    it('fromSeed should reject decoding bad public key', () => {
-        generateBadSeed()
-            .then((seed: string) => {
-                fromPublic(seed)
-                    .then((kp: KeyPair) => {
-                        assert.fail(kp, "", "decode was not expected");
-                    })
-                    .catch((err: Error) => {
-                        expect(err).to.be.instanceof(Error);
-                        let nerr : NKeysError = err as NKeysError;
-                        expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidChecksum);
-                    });
-            })
-    });
+test('should reject decoding bad seed prefix', async (t) => {
+    await t.throwsAsync(async () => {
+        let s = await generateBadSeed();
+        await Codec.decodeSeed(s);
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
+
+test('fromSeed should reject decoding bad seed prefix', async(t) => {
+    await t.throwsAsync(async () => {
+        let s = await generateBadSeed();
+        await fromSeed(s);
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
+
+test('fromSeed should reject decoding bad public key', async (t) => {
+    await t.throwsAsync(async () => {
+        let s = await generateBadSeed();
+        await fromPublic(s);
+    }, {code: NKeysErrorCode.InvalidChecksum});
+});
+
+test('public key cannot sign', async (t) => {
+    await t.throwsAsync(async () => {
+        let a = await createAccount();
+        let pks = await a.getPublicKey();
+        let pk = new PublicKey(pks);
+        let pks2 = await pk.getPublicKey();
+        t.is(pks, pks2);
+        await pk.sign(Buffer.from(""))
+    }, {code: NKeysErrorCode.CannotSign});
 });

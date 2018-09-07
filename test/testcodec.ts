@@ -13,114 +13,81 @@
  * limitations under the License.
  */
 
-import 'mocha';
-import {expect} from 'chai';
-import {Codec, SeedDecode} from '../src/codec';
+import {Codec} from '../src/codec';
 import * as crypto from "crypto";
-import * as assert from "assert";
-import {NKeysError, NKeysErrorCode, Prefix} from "../src/nkeys";
+import {NKeysErrorCode, Prefix} from "../src/nkeys";
+import test from "ava";
 
-describe('Test Codec', () => {
 
-    it('Should fail to encode non-Buffer', () => {
+test('Should fail to encode non-Buffer', async (t) => {
+    await t.throwsAsync(async () => {
         //@ts-ignore
-        return Codec.encode(Prefix.Private, 10)
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let e = err as NKeysError;
-                expect(e.code).to.be.equal(NKeysErrorCode.SerializationError);
-            });
-    });
-
-    it('Should fail to encode with invalid prefix', () => {
-        let rand = crypto.randomBytes(32);
-        return Codec.encode(13, rand)
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let e = err as NKeysError;
-                expect(e.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
-            });
-    });
-
-    it('Should encode and decode', () => {
-        let rand = crypto.randomBytes(32);
-        return Codec.encode(Prefix.Private, rand)
-            .then((str: string) => {
-                expect(str).to.be.a('string');
-                expect(str[0]).to.be.equal('P');
-                return Codec.decode(str);
-            })
-            .then((buf: Buffer) => {
-                expect(Buffer.isBuffer(buf)).to.be.true;
-                expect(buf.byteLength).to.be.equal(rand.byteLength+1);
-                expect(buf.readUInt8(0)).to.be.equal(Prefix.Private);
-            });
-    });
-
-    it('Should fail to encode seeds that are not 64 bytes', () => {
-        let rand = crypto.randomBytes(32);
-        return Codec.encodeSeed(Prefix.Account, rand)
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let e = err as NKeysError;
-                expect(e.code).to.be.equal(NKeysErrorCode.InvalidSeedLen);
-            });
-    });
-
-    it('Should encode seed and decode account', () => {
-        let rand = crypto.randomBytes(64);
-        return Codec.encodeSeed(Prefix.Account, rand)
-        .then((str: string) => {
-            expect(str).to.be.a('string');
-            expect(str[0]).to.be.equal('S');
-            expect(str[1]).to.be.equal('A');
-            return Codec.decodeExpectingPrefix(Prefix.Seed, str);
-        })
-        .then((buf: Buffer) => {
-            expect(buf[0]).to.be.equal(Prefix.Account);
-            expect(Buffer.isBuffer(buf)).to.be.true;
-            expect(buf.slice(1)).to.be.eql(rand);
-        })
-    });
-
-    it('Should encode and decode seed', () => {
-        let rand = crypto.randomBytes(64);
-        return Codec.encodeSeed(Prefix.Account, rand)
-            .then((str: string) => {
-                expect(str).to.be.a('string');
-                expect(str[0]).to.be.equal('S');
-                expect(str[1]).to.be.equal('A');
-                return Codec.decodeSeed(str);
-            })
-            .then((seed: SeedDecode) => {
-                expect(Buffer.isBuffer(seed.buf)).to.be.true;
-                expect(seed.prefix).to.be.equal(Prefix.Account);
-                expect(seed.buf).to.be.eql(rand);
-            })
-    });
-
-    it('should fail to decode non-base32', () => {
-        Codec.decode("foo!")
-            .then((buf: Buffer) => {
-                assert.fail(buf, "", "buffer was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
-            });
-    });
-
-    it('should fail to short string', () => {
-        Codec.decode("OK")
-            .then((buf: Buffer) => {
-                assert.fail(buf, "", "buffer was not expected");
-            })
-            .catch((err: Error) => {
-                expect(err).to.be.instanceof(Error);
-                let nerr : NKeysError = err as NKeysError;
-                expect(nerr.code).to.be.equal(NKeysErrorCode.InvalidPrefixByte);
-            });
-    });
+        await Codec.encode(Prefix.Private, 10);
+    }, {code: NKeysErrorCode.SerializationError});
 });
+
+test('Should fail to encode with invalid prefix', async (t) => {
+    await t.throwsAsync(async () => {
+        let rand = crypto.randomBytes(32);
+        await Codec.encode(13, rand);
+    }, {code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('Should encode and decode', async (t) => {
+    let rand = crypto.randomBytes(32);
+    let enc = await Codec.encode(Prefix.Private, rand);
+    t.is(typeof enc, 'string');
+    t.is(enc[0], 'P');
+
+    let dec = await Codec.decode(enc);
+    t.true(Buffer.isBuffer(dec));
+    t.is(dec[0], Prefix.Private);
+    t.deepEqual(dec.slice(1), rand);
+});
+
+test('Should fail to encode seeds that are not 64 bytes', async (t) => {
+    await t.throwsAsync(async() => {
+        let rand = crypto.randomBytes(32);
+        await Codec.encodeSeed(Prefix.Account, rand);
+    }, {code: NKeysErrorCode.InvalidSeedLen});
+});
+
+test('Should encode seed and decode account', async (t) => {
+    let rand = crypto.randomBytes(64);
+    let enc = await Codec.encodeSeed(Prefix.Account, rand);
+    t.is(typeof enc, 'string');
+    t.is(enc[0], 'S');
+    t.is(enc[1], 'A');
+
+    let dec = await Codec.decodeExpectingPrefix(Prefix.Seed, enc);
+    t.true(Buffer.isBuffer(dec));
+    t.is(dec[0], Prefix.Account);
+    t.deepEqual(dec.slice(1), rand);
+});
+
+test('Should encode and decode seed', async (t) => {
+    let rand = crypto.randomBytes(64);
+    let enc = await Codec.encodeSeed(Prefix.Account, rand);
+    t.is(typeof enc, 'string');
+    t.is(enc[0], 'S');
+    t.is(enc[1], 'A');
+
+    let seed = await Codec.decodeSeed(enc);
+    t.true(Buffer.isBuffer(seed.buf));
+    t.is(seed.prefix, Prefix.Account);
+    t.deepEqual(seed.buf, rand);
+});
+
+test('should fail to decode non-base32', async (t) => {
+    await t.throwsAsync(async () => {
+        await Codec.decode("foo!");
+    }, {code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('should fail to short string', async (t) => {
+    await t.throwsAsync(async () => {
+        await Codec.decode("OK");
+    }, {code: NKeysErrorCode.InvalidPrefixByte});
+});
+
 
