@@ -18,7 +18,7 @@ import {KP} from "./kp";
 import {PublicKey} from "./public";
 import {Codec, SeedDecode} from "./codec";
 
-export const VERSION = "0.0.1";
+export const VERSION = "0.9.0";
 
 export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
     return new Promise((resolve, reject) => {

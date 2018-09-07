@@ -1,11 +1,23 @@
 {
   "name": "ts-nkeys",
-  "version": "0.0.1",
+  "version": "0.9.0",
   "description": "A public-key signature system based on Ed25519 for the NATS ecosystem in typescript for ts-nats and node-nats",
   "main": "lib/nkeys.js",
   "types": "lib/nkeys.d.ts",
   "scripts": {
-    "test": "mocha -r ts-node/register test/**/*.ts"
+    "build": "npm run clean:dist && tsc",
+    "clean": "npm run clean:dist",
+    "clean:dist": "rm -rf lib",
+    "copy:dist": "cp lib/src/* lib/",
+    "cover:html": "nyc report --reporter=html && open coverage/index.html",
+    "cover:coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "dist": "npm run build && npm run copy:dist",
+    "pack": "npm pack",
+    "debugtest": "tsc && node $NODE_DEBUG_OPTION node_modules/.bin/ava --verbose -T 6500000 -m",
+    "test": "tsc && nyc ava --verbose -T 15000",
+    "publish-npm": "npm run dist && npm publish",
+    "publish-npm:beta": "npm run dist && npm publish --tag=next",
+    "doc": "node_modules/.bin/typedoc --options ./typedocconfig.ts && touch ./docs/.nojekyll"
   },
   "repository": {
     "type": "git",
@@ -20,18 +32,37 @@
   "author": "The NATS Authors",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/chai": "^4.1.2",
-    "@types/mocha": "^5.0.0",
-    "@types/node": "^9.6.1",
-    "chai": "^4.1.2",
-    "mocha": "^5.0.5",
-    "ts-node": "^5.0.1",
-    "typescript": "^2.8.1"
+    "@types/node": "^9.6.13",
+    "ava": "1.0.0-beta.8",
+    "coveralls": "^3.0.2",
+    "dependency-check": "2.5.x",
+    "if-node-version": "^1.1.1",
+    "nyc": "^12.0.2",
+    "ts-node": "^6.0.3",
+    "typescript": "^3.0.3"
   },
   "dependencies": {
     "base32-decode": "^1.0.0",
     "base32-encode": "^1.0.0",
-    "npm": "^5.8.0",
+    "npm": "^6.4.1",
     "tweetnacl": "^1.0.0"
+  },
+  "ava": {
+    "failFast": false,
+    "require": [],
+    "files": [
+      "./lib/test/**/*.js",
+      "!./lib/test/helpers/**/*.js"
+    ],
+    "sources": [
+      "**/*.js"
+    ]
+  },
+  "nyc": {
+    "exclude": [
+      "lib/test/**",
+      "examples/**",
+      "benchmark/**"
+    ]
   }
 }

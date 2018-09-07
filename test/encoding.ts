@@ -12,91 +12,87 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import 'mocha';
-import {expect} from 'chai'
-
 import b32enc = require('base32-encode');
 import b32dec = require('base32-decode');
 import {Prefix} from "../src/nkeys";
 import * as util from "../src/util";
+import test from "ava";
 
 
-describe('Should encode and decode prefixes', ()=> {
-    it('should encode seed', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.Seed;
+test('should encode seed', (t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.Seed;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('S');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0],'S');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout, buf);
+});
 
-    it('should encode private', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.Private;
+test('should encode private', async(t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.Private;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('P');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0],'P');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout, buf);
+});
 
-    it('should encode server', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.Server;
+test('should encode server', async (t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.Server;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('N');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0],'N');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout,buf);
+});
 
-    it('should encode cluster', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.Cluster;
+test('should encode cluster', async(t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.Cluster;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('C');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0],'C');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout,buf);
+});
 
-    it('should encode account', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.Account;
+test('should encode account', async(t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.Account;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('A');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0], 'A');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout,buf);
+});
 
-    it('should encode user', () => {
-        let buf = new Buffer(6);
-        buf[0] = Prefix.User;
+test('should encode user', async(t) => {
+    let buf = Buffer.alloc(1);
+    buf[0] = Prefix.User;
 
-        let f = util.toArrayBuffer();
-        let str = b32enc(f(buf), 'RFC3548');
-        expect(str[0]).to.be.eql('U');
+    let f = util.toArrayBuffer();
+    let str = b32enc(f(buf), 'RFC3548');
+    t.is(str[0],'U');
 
-        let aout = b32dec(str, 'RFC3548');
-        let bufout = Buffer.from(aout);
-        expect(bufout).to.be.eql(buf);
-    });
+    let aout = b32dec(str, 'RFC3548');
+    let bufout = Buffer.from(aout);
+    t.deepEqual(bufout,buf);
 });
