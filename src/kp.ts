@@ -51,8 +51,8 @@ export class KP implements KeyPair {
 
     sign(input: Buffer): Buffer {
         let kp = this.getKeys();
-        // @ts-ignore
-        return ed25519.sign.detached(input, kp.secretKey);
+        let a = ed25519.sign.detached(input, kp.secretKey);
+        return Buffer.from(a.buffer);
     }
 
     verify(input: Buffer, sig: Buffer): boolean {

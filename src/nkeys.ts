@@ -18,7 +18,7 @@ import {KP} from "./kp";
 import {PublicKey} from "./public";
 import {Codec} from "./codec";
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.2";
 
 export function createPair(prefix: Prefix, seed?: Buffer): KeyPair {
     if (!seed) {
