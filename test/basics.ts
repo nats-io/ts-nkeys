@@ -344,3 +344,16 @@ test('public key cannot sign', async (t) => {
         await pk.sign(Buffer.from(""))
     }, {code: NKeysErrorCode.CannotSign});
 });
+
+test('byte seeds', async (t) => {
+        let sb = Buffer.from(ed25519.randomBytes(32).buffer);
+        let a = await createAccount(sb);
+        let a2 = await createAccount(sb);
+
+        let pks = await a.getPublicKey();
+        let pks2 = await a2.getPublicKey();
+        t.log(pks, pks2);
+        t.log('seed', await a.getSeed());
+
+        t.is(pks, pks2);
+});
