@@ -24,13 +24,13 @@ let data = {
     "sig": "n91875Rvbj7MOqo14a5JWBvJ7t5gjsoJmZayLZdX6KfOb-oLlgH2m1C43GpxmoYucgIRsWzMrDGX3wyPgWh8Cw=="
 };
 
-test('verify', async (t) => {
+test('verify', (t) => {
     t.plan(2);
-    let pk = await fromPublic(data.public_key);
-    let ok = await pk.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
+    let pk = fromPublic(data.public_key);
+    let ok = pk.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
 
-    let seed = await fromSeed(data.seed);
-    ok = await seed.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
+    let seed = fromSeed(data.seed);
+    ok = seed.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
 });

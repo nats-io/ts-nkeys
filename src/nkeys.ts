@@ -16,73 +16,52 @@
 import ed25519 = require('tweetnacl')
 import {KP} from "./kp";
 import {PublicKey} from "./public";
-import {Codec, SeedDecode} from "./codec";
+import {Codec} from "./codec";
 
-export const VERSION = "0.9.0";
+export const VERSION = "1.0.0";
 
-export function createPair(prefix: Prefix, seed?: Buffer): Promise<KeyPair> {
-    return new Promise((resolve, reject) => {
-        if (!seed) {
-            seed = Buffer.from(ed25519.randomBytes(32).buffer);
-        }
-        if (!Buffer.isBuffer(seed)) {
-            reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
-            return;
-        }
+export function createPair(prefix: Prefix, seed?: Buffer): KeyPair {
+    if (!seed) {
+        seed = Buffer.from(ed25519.randomBytes(32).buffer);
+    }
+    if (!Buffer.isBuffer(seed)) {
+        throw new NKeysError(NKeysErrorCode.InvalidPublicKey);
+    }
 
-        let kp = ed25519.sign.keyPair.fromSeed(seed);
-        Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer))
-            .then((str: string) => {
-                resolve(new KP(str));
-            }).catch((err: Error) => {
-            reject(err);
-            return;
-        });
-    })
+    let kp = ed25519.sign.keyPair.fromSeed(seed);
+    let str = Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer));
+    return new KP(str);
 }
 
-export function createAccount(src?: Buffer): Promise<KeyPair> {
+export function createAccount(src?: Buffer): KeyPair {
     return createPair(Prefix.Account, src);
 }
 
-export function createUser(src?: Buffer): Promise<KeyPair> {
+export function createUser(src?: Buffer): KeyPair {
     return createPair(Prefix.User, src);
 }
 
-export function createCluster(src?: Buffer): Promise<KeyPair> {
+export function createCluster(src?: Buffer): KeyPair {
     return createPair(Prefix.Cluster, src);
 }
 
-export function createServer(src?: Buffer): Promise<KeyPair> {
+export function createServer(src?: Buffer): KeyPair {
     return createPair(Prefix.Server, src);
 }
 
-export function fromPublic(src: string): Promise<KeyPair> {
-    return new Promise((resolve, reject) => {
-        Codec.decode(src)
-            .then((raw: Buffer) => {
-                let prefix = Prefixes.parsePrefix(raw.readUInt8(0));
-                if (Prefixes.isValidPublicPrefix(prefix)) {
-                    resolve(new PublicKey(src));
-                }
-                reject(new NKeysError(NKeysErrorCode.InvalidPublicKey));
-                return;
-            })
-            .catch((err: Error) => {
-                reject(err);
-            });
-    });
+export function fromPublic(src: string): KeyPair {
+    let raw = Codec.decode(src)
+    let prefix = Prefixes.parsePrefix(raw.readUInt8(0));
+    if (Prefixes.isValidPublicPrefix(prefix)) {
+        return new PublicKey(src);
+    }
+    throw new NKeysError(NKeysErrorCode.InvalidPublicKey);
 }
 
-export function fromSeed(src: string): Promise<KeyPair> {
-    return new Promise((resolve, reject) => {
-        Codec.decodeSeed(src)
-            .then((_: SeedDecode) => {
-                resolve(new KP(src))
-            }).catch((err: Error) => {
-            reject(err);
-        });
-    });
+export function fromSeed(src: string): KeyPair {
+    Codec.decodeSeed(src);
+    // if we are here it decoded
+    return new KP(src);
 }
 
 
@@ -91,36 +70,41 @@ export interface KeyPair {
     /**
      * Returns the public key associated with the KeyPair
      * @returns {Promise<string>}
+     * @throws NKeysError
      */
-    getPublicKey(): Promise<string>;
+    getPublicKey(): string;
 
     /**
      * Returns the private key associated with the KeyPair
      * @returns {Promise<string>}
+     * @throws NKeysError
      */
-    getPrivateKey(): Promise<string>;
+    getPrivateKey(): string;
 
     /**
      * Returns the PrivateKey's seed.
      * @returns {Promise<string>}
+     * @throws NKeysError
      */
-    getSeed() : Promise<string>;
+    getSeed() : string;
 
     /**
      * Returns the digital signature of signing the input with the
      * the KeyPair's private key.
      * @param {Buffer} input
      * @returns {Promise<Buffer>}
+     * @throws NKeysError
      */
-    sign(input: Buffer): Promise<Buffer>;
+    sign(input: Buffer): Buffer;
 
     /**
      * Returns true if the signature can be verified with the KeyPair
      * @param {Buffer} input
      * @param {Buffer} sig
      * @returns {Promise<boolean>}
+     * @throws NKeysError
      */
-    verify(input: Buffer, sig: Buffer) : Promise<boolean>;
+    verify(input: Buffer, sig: Buffer) : boolean;
 }
 
 export enum Prefix {

@@ -21,13 +21,13 @@ npm install ts-nkeys
 
 ```typescript
     // create an user nkey - also possible to create accounts, clusters, servers.
-    let user = await createUser();
+    let user = createUser();
 
     // once you have an nkey you can generate various keys.
     // A seed is the public and private keys together.
     // Seeds are strings, and start with the letter 'S'. 
     // Seeds need to be kept safe and never shared.
-    let seed = await user.getSeed();
+    let seed = user.getSeed();
     t.is(typeof seed, 'string');
     t.is(seed[0], 'S');
     
@@ -39,7 +39,7 @@ npm install ts-nkeys
     t.is(seed[1], 'U');
 
     // public keys can be shared and can be used to verify signed content
-    let publicKey = await user.getPublicKey();
+    let publicKey = user.getPublicKey();
     t.is(typeof publicKey, 'string');
     // first letter represents the type of public key
     // `U` for user, 
@@ -50,26 +50,26 @@ npm install ts-nkeys
 
     // private keys like seeds shouldn't be shared. In most cases you should
     // just save the seed.
-    let privateKey = await user.getPrivateKey();
+    let privateKey = user.getPrivateKey();
     t.is(typeof privateKey, 'string');
     // private keys start with the letter 'P'.
     t.is(privateKey[0], 'P');
 
     // To sign data
     let data = Buffer.from("HelloWorld");
-    let sig = await user.sign(data);
+    let sig = user.sign(data);
     
     // to verify use the user, public or seed:
-    t.true(await user.verify(data, sig));
+    t.true(user.verify(data, sig));
 
     // public keys can be used to verify signatures you cannot sign with them though.
-    let pk = await fromPublic(publicKey);
-    t.true(await pk.verify(data, sig));
+    let pk = fromPublic(publicKey);
+    t.true(pk.verify(data, sig));
 
     // seeds can be used to reconstitute the keypair from a string
-    let sk = await fromSeed(seed);
-    t.true(await sk.verify(data, sig));
+    let sk = fromSeed(seed);
+    t.true(sk.verify(data, sig));
     // and can be used to sign
-    let sig2 = await sk.sign(data);
-    t.true(await sk.verify(data, sig))
+    let sig2 = sk.sign(data);
+    t.true(sk.verify(data, sig))
 ```
