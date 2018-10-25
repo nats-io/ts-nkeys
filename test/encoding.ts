@@ -32,7 +32,7 @@ test('should encode seed', (t) => {
     t.deepEqual(bufout, buf);
 });
 
-test('should encode private', async(t) => {
+test('should encode private', (t) => {
     let buf = Buffer.alloc(1);
     buf[0] = Prefix.Private;
 
@@ -45,7 +45,7 @@ test('should encode private', async(t) => {
     t.deepEqual(bufout, buf);
 });
 
-test('should encode server', async (t) => {
+test('should encode server', (t) => {
     let buf = Buffer.alloc(1);
     buf[0] = Prefix.Server;
 
@@ -58,7 +58,7 @@ test('should encode server', async (t) => {
     t.deepEqual(bufout,buf);
 });
 
-test('should encode cluster', async(t) => {
+test('should encode cluster', (t) => {
     let buf = Buffer.alloc(1);
     buf[0] = Prefix.Cluster;
 
@@ -71,7 +71,7 @@ test('should encode cluster', async(t) => {
     t.deepEqual(bufout,buf);
 });
 
-test('should encode account', async(t) => {
+test('should encode account', (t) => {
     let buf = Buffer.alloc(1);
     buf[0] = Prefix.Account;
 
@@ -84,7 +84,7 @@ test('should encode account', async(t) => {
     t.deepEqual(bufout,buf);
 });
 
-test('should encode user', async(t) => {
+test('should encode user', (t) => {
     let buf = Buffer.alloc(1);
     buf[0] = Prefix.User;
 

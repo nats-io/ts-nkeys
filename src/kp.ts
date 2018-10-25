@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-import {SignKeyPair} from "tweetnacl";
-import {Codec, SeedDecode} from "./codec";
 import * as ed25519 from "tweetnacl";
+import {SignKeyPair} from "tweetnacl";
+import {Codec} from "./codec";
 import {KeyPair, Prefix} from "./nkeys";
 
 export class KP implements KeyPair {
@@ -24,90 +24,39 @@ export class KP implements KeyPair {
         this.seed = seed;
     }
 
-    getRawSeed(): Promise<Buffer> {
-        return new Promise((resolve, reject) => {
-        Codec.decodeSeed(this.seed)
-            .then((ds: SeedDecode) => {
-                resolve(ds.buf);
-            })
-            .catch((err: Error) => {
-                reject(err);
-            });
-        });
+    getRawSeed(): Buffer {
+        let sd = Codec.decodeSeed(this.seed);
+        return sd.buf
     }
 
-    getKeys(): Promise<SignKeyPair> {
-        return new Promise((resolve, reject) => {
-            this.getRawSeed()
-                .then((raw: Buffer) => {
-                    let skp = ed25519.sign.keyPair.fromSecretKey(raw);
-                    resolve(skp);
-                })
-                .catch((err: Error) => {
-                    reject(err);
-                });
-        })
+    getKeys(): SignKeyPair {
+        let raw = this.getRawSeed();
+        return ed25519.sign.keyPair.fromSecretKey(raw);
     }
 
-    getSeed(): Promise<string> {
-        return new Promise((resolve) => {
-            resolve(this.seed);
-        });
+    getSeed(): string {
+        return this.seed;
     }
 
-    getPublicKey(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            Codec.decodeSeed(this.seed)
-                .then((ds: SeedDecode) => {
-                    let pub = ed25519.sign.keyPair.fromSecretKey(ds.buf);
-                    Codec.encode(ds.prefix, Buffer.from(pub.publicKey.buffer))
-                        .then((pk: string) => {
-                            resolve(pk);
-                        });
-                })
-                .catch((err: Error) => {
-                    reject(err);
-                });
-        });
+    getPublicKey(): string {
+        let ds = Codec.decodeSeed(this.seed);
+        let pub = ed25519.sign.keyPair.fromSecretKey(ds.buf);
+        return Codec.encode(ds.prefix, Buffer.from(pub.publicKey.buffer));
+    };
+
+    getPrivateKey(): string {
+        let kp = this.getKeys();
+        return Codec.encode(Prefix.Private, Buffer.from(kp.secretKey.buffer))
     }
 
-    getPrivateKey(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this.getKeys()
-                .then((kp: SignKeyPair) => {
-                    Codec.encode(Prefix.Private, Buffer.from(kp.secretKey.buffer))
-                        .then((pk: string) => {
-                           resolve(pk);
-                        });
-                })
-                .catch((err: Error) => {
-                    reject(err);
-                });
-        });
+    sign(input: Buffer): Buffer {
+        let kp = this.getKeys();
+        // @ts-ignore
+        return ed25519.sign.detached(input, kp.secretKey);
     }
 
-
-    sign(input: Buffer): Promise<Buffer> {
-        return new Promise((resolve, reject) => {
-            this.getKeys()
-                .then((kp: SignKeyPair) => {
-                    let a = ed25519.sign.detached(input, kp.secretKey);
-                    resolve(Buffer.from(a.buffer));
-                }).catch((err: Error) => {
-                    reject(err);
-                });
-        });
-    }
-
-    verify(input: Buffer, sig: Buffer): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            this.getKeys()
-                .then((sk: SignKeyPair) => {
-                    let ok = ed25519.sign.detached.verify(input, sig, sk.publicKey);
-                    resolve(ok);
-                }).catch((err: Error) => {
-                    reject(err);
-                });
-        });
+    verify(input: Buffer, sig: Buffer): boolean {
+        let sk = this.getKeys();
+        return ed25519.sign.detached.verify(input, sig, sk.publicKey);
     }
 }
