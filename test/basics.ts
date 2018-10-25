@@ -53,6 +53,7 @@ test('Account', (t) => {
     let sig = account.sign(data);
     t.is(sig.length, ed25519.sign.signatureLength);
     t.true(account.verify(data, sig));
+    t.true(Buffer.isBuffer(sig));
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
