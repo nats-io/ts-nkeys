@@ -29,156 +29,119 @@ export interface SeedDecode {
 export class Codec {
     static toArrayBuffer: util.ToArrayBuffer = util.toArrayBuffer();
 
-    static encode(prefix: Prefix, src: Buffer): Promise<string> {
-        return new Promise((resolve,reject)=> {
-            if(! Buffer.isBuffer(src)) {
-                reject(new NKeysError(NKeysErrorCode.SerializationError));
-                return;
-            }
+    static encode(prefix: Prefix, src: Buffer): string {
+        if(! Buffer.isBuffer(src)) {
+            throw new NKeysError(NKeysErrorCode.SerializationError);
+        }
 
-            if (!Prefixes.isValidPrefix(prefix)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
-                return;
-            }
+        if (!Prefixes.isValidPrefix(prefix)) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
 
-            // offsets
-            let payloadOffset = 1;
-            let payloadLen = src.byteLength;
-            let checkLen = 2;
-            let cap = payloadOffset + payloadLen + checkLen;
-            let checkOffset = payloadOffset + payloadLen;
+        // offsets
+        let payloadOffset = 1;
+        let payloadLen = src.byteLength;
+        let checkLen = 2;
+        let cap = payloadOffset + payloadLen + checkLen;
+        let checkOffset = payloadOffset + payloadLen;
 
-            let raw = new Buffer(cap);
-            raw[0] = prefix;
-            src.copy(raw, payloadOffset);
+        let raw = new Buffer(cap);
+        raw[0] = prefix;
+        src.copy(raw, payloadOffset);
 
-            //calculate the checksum write it LE
-            let checksum = crc16.checksum(raw.slice(0, checkOffset));
-            raw.writeUInt16LE(checksum, checkOffset);
+        //calculate the checksum write it LE
+        let checksum = crc16.checksum(raw.slice(0, checkOffset));
+        raw.writeUInt16LE(checksum, checkOffset);
 
-            // generate a base32 string - remove the padding
-            let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
-            str = str.replace(/=+$/, '');
-            resolve(str);
-        });
+        // generate a base32 string - remove the padding
+        let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
+        str = str.replace(/=+$/, '');
+        return str;
     }
 
-    static decode(src: string): Promise<Buffer> {
-        return new Promise((resolve,reject)=> {
-            if(! Prefixes.startsWithValidPrefix(src)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
-                return;
-            }
+    static decode(src: string): Buffer {
+        if(! Prefixes.startsWithValidPrefix(src)) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
+        let buf: ArrayBuffer;
+        try{
+            buf = b32dec(src, 'RFC3548');
+        }
+        catch(ex) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding, ex);
+        }
 
-            let buf: ArrayBuffer;
-            try{
-                buf = b32dec(src, 'RFC3548');
-            }
-            catch(ex) {
-                reject(new NKeysError(NKeysErrorCode.InvalidEncoding, ex));
-                return;
-            }
+        let raw = Buffer.from(buf);
+        if (raw.byteLength < 3) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding);
+        }
 
-            let raw = Buffer.from(buf);
-            if (raw.byteLength < 3) {
-                reject(new NKeysError(NKeysErrorCode.InvalidEncoding));
-                return;
-            }
+        let checkOffset = raw.byteLength - 2;
+        let checksum = raw.readUInt16LE(checkOffset);
 
-            let checkOffset = raw.byteLength - 2;
-            let checksum = raw.readUInt16LE(checkOffset);
-
-            let payload = raw.slice(0, checkOffset);
-            if (!crc16.validate(payload, checksum)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidChecksum));
-                return;
-            }
-            resolve(payload);
-        });
+        let payload = raw.slice(0, checkOffset);
+        if (!crc16.validate(payload, checksum)) {
+            throw new NKeysError(NKeysErrorCode.InvalidChecksum);
+        }
+        return payload;
     }
 
-    static decodeExpectingPrefix(expected: Prefix, src: string): Promise<Buffer> {
-        return new Promise((resolve, reject) => {
-            if(! Prefixes.isValidPrefix(expected)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
-                return;
-            }
-            Codec.decode(src)
-                .then((buf: Buffer) => {
-                    if (buf[0] != expected) {
-                        reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
-                        return;
-                    }
-                    resolve(buf.slice(1))
-                }).catch((err: Error) => {
-                    reject(err);
-                });
-        });
+    static decodeExpectingPrefix(expected: Prefix, src: string): Buffer {
+        if(! Prefixes.isValidPrefix(expected)) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
+        let buf = Codec.decode(src);
+        return buf.slice(1);
     }
 
-
-    static decodeSeed(src: string): Promise<SeedDecode> {
-        return new Promise((resolve,reject) => {
-            Codec.decode(src)
-                .then((raw: Buffer) => {
-                    if(raw.byteLength < 4) {
-                        reject(new NKeysError(NKeysErrorCode.InvalidEncoding));
-                        return;
-                    }
-                    let prefix = Codec.decodePrefix(raw);
-                    if (prefix[0] != Prefix.Seed) {
-                        reject(new NKeysError(NKeysErrorCode.InvalidSeed));
-                        return;
-                    }
-                    if (!Prefixes.isValidPublicPrefix(prefix[1])) {
-                        reject(new NKeysError(NKeysErrorCode.InvalidSeed));
-                        return;
-                    }
-                    resolve({buf: raw.slice(2), prefix: prefix[1]})
-                }).catch((err: Error) => {
-                    reject(err);
-                });
-        });
+    static decodeSeed(src: string): SeedDecode {
+        let raw = Codec.decode(src)
+        if(raw.byteLength < 4) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding);
+        }
+        let prefix = Codec.decodePrefix(raw);
+        if (prefix[0] != Prefix.Seed) {
+            throw new NKeysError(NKeysErrorCode.InvalidSeed);
+        }
+        if (!Prefixes.isValidPublicPrefix(prefix[1])) {
+            throw new NKeysError(NKeysErrorCode.InvalidSeed);
+        }
+        return ({buf: raw.slice(2), prefix: prefix[1]})
     }
 
-    static encodeSeed(role: Prefix, src: Buffer): Promise<string> {
-        return new Promise((resolve,reject) => {
-            if(! Buffer.isBuffer(src)) {
-                reject(new NKeysError(NKeysErrorCode.SerializationError));
-                return;
-            }
-            if(! Prefixes.isValidPublicPrefix(role)) {
-                reject(new NKeysError(NKeysErrorCode.InvalidPrefixByte));
-                return;
-            }
-            if(src.byteLength != ed25519.sign.secretKeyLength) {
-                reject(new NKeysError(NKeysErrorCode.InvalidSeedLen));
-                return;
-            }
-            // offsets for this token
-            let payloadOffset = 2;
-            let payloadLen = src.byteLength;
-            let checkLen = 2;
-            let cap = payloadOffset + payloadLen + checkLen;
-            let checkOffset = payloadOffset + payloadLen;
+    static encodeSeed(role: Prefix, src: Buffer): string {
+        if(! Buffer.isBuffer(src)) {
+            throw new NKeysError(NKeysErrorCode.SerializationError);
+        }
+        if(! Prefixes.isValidPublicPrefix(role)) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
+        if(src.byteLength != ed25519.sign.secretKeyLength) {
+            throw new NKeysError(NKeysErrorCode.InvalidSeedLen);
+        }
+        // offsets for this token
+        let payloadOffset = 2;
+        let payloadLen = src.byteLength;
+        let checkLen = 2;
+        let cap = payloadOffset + payloadLen + checkLen;
+        let checkOffset = payloadOffset + payloadLen;
 
-            // make the prefixes human readable when encoded
-            let prefix = Codec.encodePrefix(Prefix.Seed, role);
+        // make the prefixes human readable when encoded
+        let prefix = Codec.encodePrefix(Prefix.Seed, role);
 
-            let raw = new Buffer(cap);
-            prefix.copy(raw,0,0);
-            src.copy(raw, payloadOffset, 0);
+        let raw = new Buffer(cap);
+        prefix.copy(raw,0,0);
+        src.copy(raw, payloadOffset, 0);
 
-            //calculate the checksum write it LE
-            let checksum = crc16.checksum(raw.slice(0,checkOffset));
-            raw.writeUInt16LE(checksum, checkOffset);
+        //calculate the checksum write it LE
+        let checksum = crc16.checksum(raw.slice(0,checkOffset));
+        raw.writeUInt16LE(checksum, checkOffset);
 
-            // generate a string
-            // generate a base32 string - remove the padding
-            let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
-            str = str.replace(/=+$/, '');
-            resolve(str);
-        });
+        // generate a string
+        // generate a base32 string - remove the padding
+        let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
+        str = str.replace(/=+$/, '');
+        return str
     }
 
     static encodePrefix(kind: Prefix, role: Prefix): Buffer {
