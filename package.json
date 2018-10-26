@@ -1,13 +1,13 @@
 {
   "name": "ts-nkeys",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "A public-key signature system based on Ed25519 for the NATS ecosystem in typescript for ts-nats and node-nats",
   "main": "lib/nkeys.js",
   "types": "lib/nkeys.d.ts",
   "scripts": {
     "build": "npm run clean:dist && tsc",
     "clean": "npm run clean:dist",
-    "clean:dist": "rm -rf lib/*",
+    "clean:dist": "rm -rf lib/* coverage/* .nyc_output/*",
     "copy:dist": "cp lib/src/* lib/",
     "cover:html": "nyc report --reporter=html && open coverage/index.html",
     "cover:coveralls": "nyc report --reporter=text-lcov | coveralls",

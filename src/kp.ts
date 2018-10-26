@@ -14,7 +14,6 @@
  */
 
 import * as ed25519 from "tweetnacl";
-import {SignKeyPair} from "tweetnacl";
 import {Codec} from "./codec";
 import {KeyPair, Prefix} from "./nkeys";
 
@@ -29,34 +28,29 @@ export class KP implements KeyPair {
         return sd.buf
     }
 
-    getKeys(): SignKeyPair {
-        let raw = this.getRawSeed();
-        return ed25519.sign.keyPair.fromSecretKey(raw);
-    }
-
     getSeed(): string {
         return this.seed;
     }
 
     getPublicKey(): string {
-        let ds = Codec.decodeSeed(this.seed);
-        let pub = ed25519.sign.keyPair.fromSecretKey(ds.buf);
-        return Codec.encode(ds.prefix, Buffer.from(pub.publicKey.buffer));
+        let sd = Codec.decodeSeed(this.seed);
+        let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
+        return Codec.encode(sd.prefix, Buffer.from(kp.publicKey))
     };
 
     getPrivateKey(): string {
-        let kp = this.getKeys();
-        return Codec.encode(Prefix.Private, Buffer.from(kp.secretKey.buffer))
+        let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
+        return Codec.encode(Prefix.Private, Buffer.from(kp.secretKey))
     }
 
     sign(input: Buffer): Buffer {
-        let kp = this.getKeys();
+        let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
         let a = ed25519.sign.detached(input, kp.secretKey);
         return Buffer.from(a.buffer);
     }
 
     verify(input: Buffer, sig: Buffer): boolean {
-        let sk = this.getKeys();
-        return ed25519.sign.detached.verify(input, sig, sk.publicKey);
+        let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
+        return ed25519.sign.detached.verify(input, sig, kp.publicKey);
     }
 }

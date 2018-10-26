@@ -18,17 +18,16 @@ import {KP} from "../src/kp";
 import {Codec} from "../src/codec";
 import {
     createAccount,
-    createCluster,
+    createCluster, createOperator,
     createPair,
     createServer,
     createUser,
     fromPublic,
     fromSeed,
     NKeysErrorCode,
-    Prefix
+    Prefix, Prefixes
 } from "../src/nkeys";
 import ed25519 = require('tweetnacl');
-import {PublicKey} from "../src/public";
 
 
 test('Account', (t) => {
@@ -48,18 +47,20 @@ test('Account', (t) => {
     t.is(typeof privateKey, 'string');
     t.is(privateKey[0], 'P');
 
-
     let data = Buffer.from("HelloWorld");
     let sig = account.sign(data);
     t.is(sig.length, ed25519.sign.signatureLength);
     t.true(account.verify(data, sig));
     t.true(Buffer.isBuffer(sig));
 
-    let pk = fromPublic(publicKey);
-    t.true(pk.verify(data, sig));
-
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
+
+    let pk = fromPublic(publicKey);
+    t.is(pk.getPublicKey(), publicKey);
+
+    t.throws(pk.getPrivateKey);
+    t.true(pk.verify(data, sig));
 });
 
 test('User', (t) => {
@@ -87,6 +88,7 @@ test('User', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -117,6 +119,38 @@ test('Cluster', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
+
+    let sk = fromSeed(seed);
+    t.true(sk.verify(data, sig));
+});
+
+test('Operator', (t) => {
+    let operator = createOperator();
+    t.truthy(operator);
+
+    let seed = operator.getSeed();
+    t.is(typeof seed, 'string');
+    t.is(seed[0], 'S');
+    t.is(seed[1], 'O');
+
+    let publicKey = operator.getPublicKey();
+    t.is(typeof publicKey, 'string');
+    t.is(publicKey[0], 'O');
+
+    let privateKey = operator.getPrivateKey();
+    t.is(typeof privateKey, 'string');
+    t.is(privateKey[0], 'P');
+
+
+    let data = Buffer.from("HelloWorld");
+    let sig = operator.sign(data);
+    t.is(sig.length, ed25519.sign.signatureLength);
+    t.true(operator.verify(data, sig));
+
+    let pk = fromPublic(publicKey);
+    t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -125,7 +159,6 @@ test('Cluster', (t) => {
 test('Server', (t) => {
     let server = createServer();
     t.truthy(server);
-
     let seed = server.getSeed();
     t.is(typeof seed, 'string');
     t.is(seed[0], 'S');
@@ -147,6 +180,7 @@ test('Server', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -196,23 +230,10 @@ test('Test fromSeed', (t) => {
     t.true(fseed.verify(data, signature));
 });
 
-test('should fail if key is empty', (t) => {
-    t.throws(() => {
-        createPair(Prefix.User, Buffer.from([]));
-    }, {message: 'bad seed size'});
-});
-
 test('should fail with non public prefix', (t) => {
     t.throws(() => {
         createPair(Prefix.Private);
     }, {code: NKeysErrorCode.InvalidPrefixByte});
-});
-
-test('should fail getting keys on bad seed', (t) => {
-    t.throws(() => {
-        let kp = new KP("SEEDBAD");
-        kp.getKeys();
-    }, {code: NKeysErrorCode.InvalidChecksum});
 });
 
 test('should fail getting public key on bad seed', (t) => {
@@ -245,28 +266,28 @@ function badKey(): string {
 test('should reject decoding bad checksums', (t) => {
     t.throws(() => {
         let bk = badKey();
-        Codec.decode(bk);
+        Codec._decode(bk);
     }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
 test('should reject decoding expected byte with bad checksum', (t) => {
     t.throws(() => {
         let bk = badKey();
-        Codec.decodeExpectingPrefix(Prefix.User, bk);
+        Codec.decode(Prefix.User, bk);
     }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
 test('should reject decoding expected bad prefix', (t) => {
     t.throws(() => {
         let bk = badKey();
-        Codec.decodeExpectingPrefix(3<<3, bk);
+        Codec.decode(3<<3, bk);
     }, {code: NKeysErrorCode.InvalidPrefixByte});
 });
 
 test('should reject decoding expected bad checksum', (t) => {
     t.throws(() => {
         let bk = badKey();
-        Codec.decodeExpectingPrefix(Prefix.Account, bk);
+        Codec.decode(Prefix.Account, bk);
     }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
@@ -294,7 +315,7 @@ test('should reject decoding seed bad checksum', (t) => {
 });
 
 function generateBadSeed(): string {
-        let a = createAccount()
+        let a = createAccount();
         let seed = a.getSeed();
         return seed[0] + 'S' + seed.slice(2);
 }
@@ -324,22 +345,36 @@ test('public key cannot sign', (t) => {
     t.throws(() => {
         let a = createAccount();
         let pks = a.getPublicKey();
-        let pk = new PublicKey(pks);
+        let pk = fromPublic(pks);
         let pks2 = pk.getPublicKey();
         t.is(pks, pks2);
         pk.sign(Buffer.from(""))
     }, {code: NKeysErrorCode.CannotSign});
 });
 
-test('byte seeds', (t) => {
-        let sb = Buffer.from(ed25519.randomBytes(32).buffer);
-        let a = createAccount(sb);
-        let a2 = createAccount(sb);
+test('from public rejects non-public keys', (t) => {
+    t.throws(() => {
+        let a = createAccount();
+        let pks = a.getSeed();
+        fromPublic(pks);
+    }, {code: NKeysErrorCode.InvalidPublicKey});
+});
 
-        let pks = a.getPublicKey();
-        let pks2 = a2.getPublicKey();
-        // t.log(pks, pks2);
-        // t.log('seed', a.getSeed());
 
-        t.is(pks, pks2);
+test('test valid prefixes', (t) => {
+    let valid = ['S', 'P', 'O', 'N', 'C', 'A', 'U'];
+    valid.forEach((v:string) => {
+        t.true(Prefixes.startsWithValidPrefix(v))
+    });
+    let b32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=";
+    b32.split('').forEach((c: string) => {
+        let ok = valid.indexOf(c) !== -1;
+        if (ok) {
+            t.true(Prefixes.startsWithValidPrefix(c));
+        } else {
+            t.false(Prefixes.startsWithValidPrefix(c));
+        }
+    })
+
+
 });

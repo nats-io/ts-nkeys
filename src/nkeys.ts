@@ -18,39 +18,36 @@ import {KP} from "./kp";
 import {PublicKey} from "./public";
 import {Codec} from "./codec";
 
-export const VERSION = "1.0.2";
+export const VERSION = "1.0.4";
 
-export function createPair(prefix: Prefix, seed?: Buffer): KeyPair {
-    if (!seed) {
-        seed = Buffer.from(ed25519.randomBytes(32).buffer);
-    }
-    if (!Buffer.isBuffer(seed)) {
-        throw new NKeysError(NKeysErrorCode.InvalidPublicKey);
-    }
-
-    let kp = ed25519.sign.keyPair.fromSeed(seed);
-    let str = Codec.encodeSeed(prefix, Buffer.from(kp.secretKey.buffer));
+export function createPair(prefix: Prefix): KeyPair {
+    let rawSeed = ed25519.randomBytes(32).buffer;
+    let str = Codec.encodeSeed(prefix, Buffer.from(rawSeed));
     return new KP(str);
 }
 
-export function createAccount(src?: Buffer): KeyPair {
-    return createPair(Prefix.Account, src);
+export function createAccount(): KeyPair {
+    return createPair(Prefix.Account);
 }
 
-export function createUser(src?: Buffer): KeyPair {
-    return createPair(Prefix.User, src);
+export function createUser(): KeyPair {
+    return createPair(Prefix.User);
 }
 
-export function createCluster(src?: Buffer): KeyPair {
-    return createPair(Prefix.Cluster, src);
+export function createOperator(): KeyPair {
+    return createPair(Prefix.Operator);
 }
 
-export function createServer(src?: Buffer): KeyPair {
-    return createPair(Prefix.Server, src);
+export function createCluster(): KeyPair {
+    return createPair(Prefix.Cluster);
+}
+
+export function createServer(): KeyPair {
+    return createPair(Prefix.Server);
 }
 
 export function fromPublic(src: string): KeyPair {
-    let raw = Codec.decode(src)
+    let raw = Codec._decode(src);
     let prefix = Prefixes.parsePrefix(raw.readUInt8(0));
     if (Prefixes.isValidPublicPrefix(prefix)) {
         return new PublicKey(src);
@@ -114,6 +111,9 @@ export enum Prefix {
     //PrefixBytePrivate is the version byte used for encoded NATS Private keys
     Private = 15 << 3, // Base32-encodes to 'P...'
 
+    //PrefixByteOperator is the version byte used for encoded NATS Operators
+    Operator = 14 << 3, // Base32-encodes to 'O...'
+
     //PrefixByteServer is the version byte used for encoded NATS Servers
     Server = 13 << 3, // Base32-encodes to 'N...'
 
@@ -133,6 +133,7 @@ export enum Prefix {
 export class Prefixes {
     static isValidPublicPrefix(prefix: Prefix): boolean {
         return prefix == Prefix.Server
+            || prefix == Prefix.Operator
             || prefix == Prefix.Cluster
             || prefix == Prefix.Account
             || prefix == Prefix.User;
@@ -140,7 +141,7 @@ export class Prefixes {
 
     static startsWithValidPrefix(s: string) {
         let c = s[0];
-        return c == 'S' || c == 'P' || c == 'N' || c == 'C' || c == 'A' || c == 'U';
+        return c == 'S' || c == 'P' || c == 'O' || c == 'N' || c == 'C' || c == 'A' || c == 'U';
     }
 
     static isValidPrefix(prefix: Prefix) : boolean {
@@ -154,6 +155,8 @@ export class Prefixes {
                 return Prefix.Seed;
             case Prefix.Private:
                 return Prefix.Private;
+            case Prefix.Operator:
+                return Prefix.Operator;
             case Prefix.Server:
                 return Prefix.Server;
             case Prefix.Cluster:
@@ -179,7 +182,8 @@ export enum NKeysErrorCode {
     CannotSign        = "nkeys: can not sign, no private key available",
     PublicKeyOnly     = "nkeys: no seed or private key available",
     InvalidChecksum   = "nkeys: invalid checksum",
-    SerializationError   = "nkeys: serialization error"
+    SerializationError   = "nkeys: serialization error",
+    ApiError          = "nkeys: api error"
 }
 
 export class NKeysError extends Error {
