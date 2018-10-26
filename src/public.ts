@@ -44,7 +44,7 @@ export class PublicKey implements KeyPair {
     }
 
     verify(input: Buffer, sig: Buffer): boolean {
-        let buf = Codec.decode(this.publicKey);
+        let buf = Codec._decode(this.publicKey);
         return ed25519.sign.detached.verify(input, sig, buf.slice(1));
     }
 }

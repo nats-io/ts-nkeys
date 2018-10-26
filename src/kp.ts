@@ -14,7 +14,6 @@
  */
 
 import * as ed25519 from "tweetnacl";
-import {SignKeyPair} from "tweetnacl";
 import {Codec} from "./codec";
 import {KeyPair, Prefix} from "./nkeys";
 
@@ -27,11 +26,6 @@ export class KP implements KeyPair {
     getRawSeed(): Buffer {
         let sd = Codec.decodeSeed(this.seed);
         return sd.buf
-    }
-
-    getKeys(): SignKeyPair {
-        let raw = this.getRawSeed();
-        return ed25519.sign.keyPair.fromSecretKey(raw);
     }
 
     getSeed(): string {

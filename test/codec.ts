@@ -17,6 +17,7 @@ import {Codec} from '../src/codec';
 import * as crypto from "crypto";
 import {NKeysErrorCode, Prefix} from "../src/nkeys";
 import test from "ava";
+import ed25519 = require('tweetnacl');
 
 
 test('Should fail to encode non-Buffer', (t) => {
@@ -39,7 +40,7 @@ test('Should encode and decode', (t) => {
     t.is(typeof enc, 'string');
     t.is(enc[0], 'P');
 
-    let dec = Codec.decode(enc);
+    let dec = Codec._decode(enc);
     t.true(Buffer.isBuffer(dec));
     t.is(dec[0], Prefix.Private);
     t.deepEqual(dec.slice(1), rand);
@@ -59,7 +60,7 @@ test('Should encode seed and decode account', (t) => {
     t.is(enc[0], 'S');
     t.is(enc[1], 'A');
 
-    let dec = Codec.decodeExpectingPrefix(Prefix.Seed, enc);
+    let dec = Codec.decode(Prefix.Seed, enc);
     t.true(Buffer.isBuffer(dec));
     t.is(dec[0], Prefix.Account);
     t.deepEqual(dec.slice(1), rand);
@@ -88,4 +89,45 @@ test('should fail to short string', (t) => {
     t.throws(() => {
         Codec.decodeSeed("OK");
     }, {code: NKeysErrorCode.InvalidEncoding});
+});
+
+
+test('decode with invalid role should fail', (t) => {
+    let rawSeed = ed25519.randomBytes(32).buffer;
+    //@ts-ignore
+    let badSeed = Codec._encode(false, 'R', Buffer.from(rawSeed));
+    t.throws(() => {
+        //@ts-ignore
+        Codec.decode('Z', badSeed);
+    },{code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('encode seed requires buffer', (t) => {
+    //@ts-ignore
+    t.throws(() => {
+        //@ts-ignore
+        Codec.encodeSeed(false, Prefix.Account, "foo");
+    },{code: NKeysErrorCode.ApiError});
+});
+
+test('decodeSeed with invalid role should fail', (t) => {
+    let rawSeed = ed25519.randomBytes(32).buffer;
+    let badRole = 23 << 3; // X
+    //@ts-ignore
+    let badSeed = Codec._encode(true, badRole, Buffer.from(rawSeed));
+    t.log(badSeed);
+    t.throws(() => {
+        //@ts-ignore
+        Codec.decodeSeed(badSeed);
+    },{code: NKeysErrorCode.InvalidPrefixByte});
+});
+
+test('decode unexpected prefix should fail', (t) => {
+    let rawSeed = ed25519.randomBytes(32).buffer;
+    //@ts-ignore
+    let seed = Codec._encode(false, Prefix.Account, Buffer.from(rawSeed));
+    t.throws(() => {
+        //@ts-ignore
+        Codec.decode(Prefix.User, seed);
+    },{code: NKeysErrorCode.InvalidPrefixByte});
 });

@@ -34,6 +34,10 @@ export function createUser(): KeyPair {
     return createPair(Prefix.User);
 }
 
+export function createOperator(): KeyPair {
+    return createPair(Prefix.Operator);
+}
+
 export function createCluster(): KeyPair {
     return createPair(Prefix.Cluster);
 }
@@ -43,7 +47,7 @@ export function createServer(): KeyPair {
 }
 
 export function fromPublic(src: string): KeyPair {
-    let raw = Codec.decode(src);
+    let raw = Codec._decode(src);
     let prefix = Prefixes.parsePrefix(raw.readUInt8(0));
     if (Prefixes.isValidPublicPrefix(prefix)) {
         return new PublicKey(src);
@@ -178,7 +182,8 @@ export enum NKeysErrorCode {
     CannotSign        = "nkeys: can not sign, no private key available",
     PublicKeyOnly     = "nkeys: no seed or private key available",
     InvalidChecksum   = "nkeys: invalid checksum",
-    SerializationError   = "nkeys: serialization error"
+    SerializationError   = "nkeys: serialization error",
+    ApiError          = "nkeys: api error"
 }
 
 export class NKeysError extends Error {
