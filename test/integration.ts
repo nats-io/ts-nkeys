@@ -14,18 +14,29 @@
  */
 
 import test from "ava";
-import {fromPublic, fromSeed} from "../src/nkeys";
+import {createAccount, fromPublic, fromSeed, Prefix} from "../src/nkeys";
+import {Codec} from '../src/codec';
+
 
 // this was generated using nkey api in go
 let data = {
-    "seed": "SAADQYV2GFYCKXPG5IG6BOPAIKQPFCQAIK3IIIIIQPXKIQUQTKJAFDPJH5E6MKWIT2QSCSC77YMJQP55BKKFKUC3YVWCTZQPIA2JEF2RJOBT4",
-    "public_key": "ADUT6SPGFLEJ5IJBJBP74GEYH66QVFCVKBN4K3BJ4YHUANESC5IUXPO7",
-    "nonce": "yaefGpCIUh-G35PertpItw==",
-    "sig": "n91875Rvbj7MOqo14a5JWBvJ7t5gjsoJmZayLZdX6KfOb-oLlgH2m1C43GpxmoYucgIRsWzMrDGX3wyPgWh8Cw=="
+    "seed": "SAAK7IAXLQQ2A65HJCMUBR6IG6GP3AOXQGEPCNQIIAG7ZZ7XCEFIROMY6U",
+    "public_key": "ACLG5IASA6EMBRAUOXXWX44GNBZPDJO3A3RYDT7FDYYEPBJIBRGP6WHZ",
+    "nonce": "2w2TrJVMAqwqZbg0nXovhQ==",
+    "sig": "F64qNsH2n_XllIX7qYa1YqTTH_K61tPHlvvsN_lhlo-tCpTaKfp0_yWnw5IsQeaiSqwN2rUs20Rk1VV9vtiBBw=="
 };
 
 test('verify', (t) => {
-    t.plan(2);
+    let kp = createAccount();
+    let sk = kp.getSeed();
+    let privateKey = kp.getPrivateKey();
+    let publicKey = kp.getPublicKey();
+
+    t.log("seed", sk);
+    t.log("private", privateKey);
+    t.log("public", publicKey);
+
+    // t.plan(2);
     let pk = fromPublic(data.public_key);
     let ok = pk.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
@@ -33,4 +44,24 @@ test('verify', (t) => {
     let seed = fromSeed(data.seed);
     ok = seed.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
+});
+
+
+
+test('encoded seed returns stable values albertor', (t) => {
+    let data = {
+            "seed": "SUAGC3DCMVZHI33SMFWGEZLSORXXEYLMMJSXE5DPOJQWYYTFOJ2G64VAPY",
+            "public_key": "UAHJLSMYZDJCBHQ2SARL37IEALR3TI7VVPZ2MJ7F4SZKNOG7HJJIYW5T",
+            "private_key": "PBQWYYTFOJ2G64TBNRRGK4TUN5ZGC3DCMVZHI33SMFWGEZLSORXXEDUVZGMMRURATYNJAIV57UCAFY5ZUP22X45GE7S6JMVGXDPTUUUMRKXA",
+            "nonce": "",
+            "sig": ""
+        };
+
+    let v = Codec.encodeSeed(Prefix.User, Buffer.from("albertoralbertoralbertoralbertor"));
+    t.is(v, data.seed);
+
+    var kp = fromSeed(v)
+    t.is(kp.getSeed(), data.seed, "seed");
+    t.is(kp.getPublicKey(), data.public_key, "public key");
+    t.is(kp.getPrivateKey(), data.private_key, "private key");
 });

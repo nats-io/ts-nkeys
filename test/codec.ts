@@ -45,15 +45,15 @@ test('Should encode and decode', (t) => {
     t.deepEqual(dec.slice(1), rand);
 });
 
-test('Should fail to encode seeds that are not 64 bytes', (t) => {
+test('Should fail to encode seeds that are not 32 bytes', (t) => {
     t.throws(() => {
-        let rand = crypto.randomBytes(32);
+        let rand = crypto.randomBytes(64);
         Codec.encodeSeed(Prefix.Account, rand);
     }, {code: NKeysErrorCode.InvalidSeedLen});
 });
 
 test('Should encode seed and decode account', (t) => {
-    let rand = crypto.randomBytes(64);
+    let rand = crypto.randomBytes(32);
     let enc = Codec.encodeSeed(Prefix.Account, rand);
     t.is(typeof enc, 'string');
     t.is(enc[0], 'S');
@@ -66,7 +66,7 @@ test('Should encode seed and decode account', (t) => {
 });
 
 test('Should encode and decode seed', (t) => {
-    let rand = crypto.randomBytes(64);
+    let rand = crypto.randomBytes(32);
     let enc = Codec.encodeSeed(Prefix.Account, rand);
     t.is(typeof enc, 'string');
     t.is(enc[0], 'S');
@@ -80,12 +80,12 @@ test('Should encode and decode seed', (t) => {
 
 test('should fail to decode non-base32', (t) => {
     t.throws(() => {
-        Codec.decode("foo!");
-    }, {code: NKeysErrorCode.InvalidPrefixByte});
+        Codec.decodeSeed("foo!");
+    }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
 test('should fail to short string', (t) => {
     t.throws(() => {
-        Codec.decode("OK");
-    }, {code: NKeysErrorCode.InvalidPrefixByte});
+        Codec.decodeSeed("OK");
+    }, {code: NKeysErrorCode.InvalidEncoding});
 });

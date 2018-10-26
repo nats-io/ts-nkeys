@@ -59,64 +59,15 @@ export class Codec {
         return str;
     }
 
-    static decode(src: string): Buffer {
-        if(! Prefixes.startsWithValidPrefix(src)) {
-            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
-        }
-        let buf: ArrayBuffer;
-        try{
-            buf = b32dec(src, 'RFC3548');
-        }
-        catch(ex) {
-            throw new NKeysError(NKeysErrorCode.InvalidEncoding, ex);
-        }
-
-        let raw = Buffer.from(buf);
-        if (raw.byteLength < 3) {
-            throw new NKeysError(NKeysErrorCode.InvalidEncoding);
-        }
-
-        let checkOffset = raw.byteLength - 2;
-        let checksum = raw.readUInt16LE(checkOffset);
-
-        let payload = raw.slice(0, checkOffset);
-        if (!crc16.validate(payload, checksum)) {
-            throw new NKeysError(NKeysErrorCode.InvalidChecksum);
-        }
-        return payload;
-    }
-
-    static decodeExpectingPrefix(expected: Prefix, src: string): Buffer {
-        if(! Prefixes.isValidPrefix(expected)) {
-            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
-        }
-        let buf = Codec.decode(src);
-        return buf.slice(1);
-    }
-
-    static decodeSeed(src: string): SeedDecode {
-        let raw = Codec.decode(src)
-        if(raw.byteLength < 4) {
-            throw new NKeysError(NKeysErrorCode.InvalidEncoding);
-        }
-        let prefix = Codec.decodePrefix(raw);
-        if (prefix[0] != Prefix.Seed) {
-            throw new NKeysError(NKeysErrorCode.InvalidSeed);
-        }
-        if (!Prefixes.isValidPublicPrefix(prefix[1])) {
-            throw new NKeysError(NKeysErrorCode.InvalidSeed);
-        }
-        return ({buf: raw.slice(2), prefix: prefix[1]})
-    }
-
     static encodeSeed(role: Prefix, src: Buffer): string {
-        if(! Buffer.isBuffer(src)) {
-            throw new NKeysError(NKeysErrorCode.SerializationError);
-        }
         if(! Prefixes.isValidPublicPrefix(role)) {
             throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
         }
-        if(src.byteLength != ed25519.sign.secretKeyLength) {
+        if(! Buffer.isBuffer(src)) {
+            throw new NKeysError(NKeysErrorCode.SerializationError);
+        }
+
+        if(src.byteLength != ed25519.sign.seedLength) {
             throw new NKeysError(NKeysErrorCode.InvalidSeedLen);
         }
         // offsets for this token
@@ -142,6 +93,53 @@ export class Codec {
         let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
         str = str.replace(/=+$/, '');
         return str
+    }
+
+    static decode(src: string): Buffer {
+        let buf: ArrayBuffer;
+        try{
+            buf = b32dec(src, 'RFC3548');
+        }
+        catch(ex) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding, ex);
+        }
+
+        let raw = Buffer.from(buf);
+        if (raw.byteLength < 4) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding);
+        }
+
+        let checkOffset = raw.byteLength - 2;
+        let checksum = raw.readUInt16LE(checkOffset);
+
+        let payload = raw.slice(0, checkOffset);
+        if (!crc16.validate(payload, checksum)) {
+            throw new NKeysError(NKeysErrorCode.InvalidChecksum);
+        }
+        return payload;
+    }
+
+    static decodeExpectingPrefix(expected: Prefix, src: string): Buffer {
+        if(! Prefixes.isValidPrefix(expected)) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
+        let raw = Codec.decode(src);
+        if (raw[0] !== expected) {
+            throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
+        }
+        return raw.slice(1);
+    }
+
+    static decodeSeed(src: string): SeedDecode {
+        let raw = Codec.decode(src);
+        let prefix = Codec.decodePrefix(raw);
+        if (prefix[0] != Prefix.Seed) {
+            throw new NKeysError(NKeysErrorCode.InvalidSeed);
+        }
+        if (!Prefixes.isValidPublicPrefix(prefix[1])) {
+            throw new NKeysError(NKeysErrorCode.InvalidSeed);
+        }
+        return ({buf: raw.slice(2), prefix: prefix[1]})
     }
 
     static encodePrefix(kind: Prefix, role: Prefix): Buffer {

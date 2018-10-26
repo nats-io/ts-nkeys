@@ -28,7 +28,6 @@ import {
     Prefix
 } from "../src/nkeys";
 import ed25519 = require('tweetnacl');
-import {PublicKey} from "../src/public";
 
 
 test('Account', (t) => {
@@ -48,18 +47,20 @@ test('Account', (t) => {
     t.is(typeof privateKey, 'string');
     t.is(privateKey[0], 'P');
 
-
     let data = Buffer.from("HelloWorld");
     let sig = account.sign(data);
     t.is(sig.length, ed25519.sign.signatureLength);
     t.true(account.verify(data, sig));
     t.true(Buffer.isBuffer(sig));
 
-    let pk = fromPublic(publicKey);
-    t.true(pk.verify(data, sig));
-
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
+
+    let pk = fromPublic(publicKey);
+    t.is(pk.getPublicKey(), publicKey);
+
+    t.throws(pk.getPrivateKey);
+    t.true(pk.verify(data, sig));
 });
 
 test('User', (t) => {
@@ -87,6 +88,7 @@ test('User', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -117,6 +119,7 @@ test('Cluster', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -125,7 +128,6 @@ test('Cluster', (t) => {
 test('Server', (t) => {
     let server = createServer();
     t.truthy(server);
-
     let seed = server.getSeed();
     t.is(typeof seed, 'string');
     t.is(seed[0], 'S');
@@ -147,6 +149,7 @@ test('Server', (t) => {
 
     let pk = fromPublic(publicKey);
     t.true(pk.verify(data, sig));
+    t.throws(pk.getPrivateKey);
 
     let sk = fromSeed(seed);
     t.true(sk.verify(data, sig));
@@ -194,12 +197,6 @@ test('Test fromSeed', (t) => {
 
     let fseed = fromSeed(seed);
     t.true(fseed.verify(data, signature));
-});
-
-test('should fail if key is empty', (t) => {
-    t.throws(() => {
-        createPair(Prefix.User, Buffer.from([]));
-    }, {message: 'bad seed size'});
 });
 
 test('should fail with non public prefix', (t) => {
@@ -324,22 +321,9 @@ test('public key cannot sign', (t) => {
     t.throws(() => {
         let a = createAccount();
         let pks = a.getPublicKey();
-        let pk = new PublicKey(pks);
+        let pk = fromPublic(pks);
         let pks2 = pk.getPublicKey();
         t.is(pks, pks2);
         pk.sign(Buffer.from(""))
     }, {code: NKeysErrorCode.CannotSign});
-});
-
-test('byte seeds', (t) => {
-        let sb = Buffer.from(ed25519.randomBytes(32).buffer);
-        let a = createAccount(sb);
-        let a2 = createAccount(sb);
-
-        let pks = a.getPublicKey();
-        let pks2 = a2.getPublicKey();
-        // t.log(pks, pks2);
-        // t.log('seed', a.getSeed());
-
-        t.is(pks, pks2);
 });
