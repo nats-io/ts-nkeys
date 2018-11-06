@@ -35,17 +35,17 @@ test('Account', (t) => {
     t.truthy(account);
 
     let seed = account.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'A');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'A'.charCodeAt(0));
 
     let publicKey = account.getPublicKey();
-    t.is(typeof publicKey, 'string');
-    t.is(publicKey[0], 'A');
+    t.true(Buffer.isBuffer(publicKey));
+    t.is(publicKey[0], 'A'.charCodeAt(0));
 
     let privateKey = account.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    t.is(privateKey[0], 'P');
+    t.true(Buffer.isBuffer(privateKey));
+    t.is(privateKey[0], 'P'.charCodeAt(0));
 
     let data = Buffer.from("HelloWorld");
     let sig = account.sign(data);
@@ -68,17 +68,17 @@ test('User', (t) => {
     t.truthy(user);
 
     let seed = user.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'U');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'U'.charCodeAt(0));
 
     let publicKey = user.getPublicKey();
-    t.is(typeof publicKey, 'string');
-    t.is(publicKey[0], 'U');
+    t.true(Buffer.isBuffer(publicKey));
+    t.is(publicKey[0], 'U'.charCodeAt(0));
 
     let privateKey = user.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    t.is(privateKey[0], 'P');
+    t.true(Buffer.isBuffer(privateKey));
+    t.is(privateKey[0], 'P'.charCodeAt(0));
 
 
     let data = Buffer.from("HelloWorld");
@@ -99,17 +99,17 @@ test('Cluster', (t) => {
     t.truthy(cluster);
 
     let seed = cluster.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'C');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'C'.charCodeAt(0));
 
     let publicKey = cluster.getPublicKey();
-    t.is(typeof publicKey, 'string');
-    t.is(publicKey[0], 'C');
+    t.true(Buffer.isBuffer(publicKey));
+    t.is(publicKey[0], 'C'.charCodeAt(0));
 
     let privateKey = cluster.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    t.is(privateKey[0], 'P');
+    t.true(Buffer.isBuffer(privateKey));
+    t.is(privateKey[0], 'P'.charCodeAt(0));
 
 
     let data = Buffer.from("HelloWorld");
@@ -130,18 +130,17 @@ test('Operator', (t) => {
     t.truthy(operator);
 
     let seed = operator.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'O');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'O'.charCodeAt(0));
 
     let publicKey = operator.getPublicKey();
-    t.is(typeof publicKey, 'string');
-    t.is(publicKey[0], 'O');
+    t.true(Buffer.isBuffer(publicKey));
+    t.is(publicKey[0], 'O'.charCodeAt(0));
 
     let privateKey = operator.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    t.is(privateKey[0], 'P');
-
+    t.true(Buffer.isBuffer(privateKey));
+    t.is(privateKey[0], 'P'.charCodeAt(0));
 
     let data = Buffer.from("HelloWorld");
     let sig = operator.sign(data);
@@ -160,17 +159,17 @@ test('Server', (t) => {
     let server = createServer();
     t.truthy(server);
     let seed = server.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'N');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'N'.charCodeAt(0));
 
     let publicKey = server.getPublicKey();
-    t.is(typeof publicKey, 'string');
-    t.is(publicKey[0], 'N');
+    t.true(Buffer.isBuffer(publicKey));
+    t.is(publicKey[0], 'N'.charCodeAt(0));
 
     let privateKey = server.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    t.is(privateKey[0], 'P');
+    t.true(Buffer.isBuffer(privateKey));
+    t.is(privateKey[0], 'P'.charCodeAt(0));
 
 
     let data = Buffer.from("HelloWorld");
@@ -222,9 +221,9 @@ test('Test fromSeed', (t) => {
     t.true(account.verify(data, signature));
 
     let seed = account.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
-    t.is(seed[1], 'A');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
+    t.is(seed[1], 'A'.charCodeAt(0));
 
     let fseed = fromSeed(seed);
     t.true(fseed.verify(data, signature));
@@ -238,29 +237,31 @@ test('should fail with non public prefix', (t) => {
 
 test('should fail getting public key on bad seed', (t) => {
     t.throws(() => {
-        let kp = new KP("SEEDBAD");
+        let kp = new KP(Buffer.from("SEEDBAD"));
         kp.getPublicKey();
     }, {code: NKeysErrorCode.InvalidChecksum});
 });
 
 test('should fail getting private key on bad seed',  (t) => {
     t.throws(() => {
-        let kp = new KP("SEEDBAD");
+        let kp = new KP(Buffer.from("SEEDBAD"));
         kp.getPrivateKey();
     }, {code: NKeysErrorCode.InvalidChecksum});
 });
 
 test('should fail signing with bad seed', (t) => {
     t.throws(() => {
-        let kp = new KP("SEEDBAD");
+        let kp = new KP(Buffer.from("SEEDBAD"));
         kp.sign(Buffer.from([]));
     }, {code: NKeysErrorCode.InvalidChecksum});
 });
 
-function badKey(): string {
+function badKey(): Buffer {
         let a = createAccount();
         let pk = a.getPublicKey();
-        return pk.slice(0, pk.length-2) + "00";
+        pk[pk.byteLength-1] = "0".charCodeAt(0);
+        pk[pk.byteLength-2] = "0".charCodeAt(0);
+        return pk;
 }
 
 test('should reject decoding bad checksums', (t) => {
@@ -314,10 +315,11 @@ test('should reject decoding seed bad checksum', (t) => {
     }, {code: NKeysErrorCode.InvalidSeed});
 });
 
-function generateBadSeed(): string {
+function generateBadSeed(): Buffer {
         let a = createAccount();
         let seed = a.getSeed();
-        return seed[0] + 'S' + seed.slice(2);
+        seed[1] = 'S'.charCodeAt(0);
+        return seed;
 }
 
 test('should reject decoding bad seed prefix', (t) => {

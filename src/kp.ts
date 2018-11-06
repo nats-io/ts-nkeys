@@ -18,8 +18,8 @@ import {Codec} from "./codec";
 import {KeyPair, Prefix} from "./nkeys";
 
 export class KP implements KeyPair {
-    seed: string;
-    constructor(seed: string) {
+    seed: Buffer;
+    constructor(seed: Buffer) {
         this.seed = seed;
     }
 
@@ -28,17 +28,17 @@ export class KP implements KeyPair {
         return sd.buf
     }
 
-    getSeed(): string {
+    getSeed(): Buffer {
         return this.seed;
     }
 
-    getPublicKey(): string {
+    getPublicKey(): Buffer {
         let sd = Codec.decodeSeed(this.seed);
         let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
         return Codec.encode(sd.prefix, Buffer.from(kp.publicKey))
     };
 
-    getPrivateKey(): string {
+    getPrivateKey(): Buffer {
         let kp = ed25519.sign.keyPair.fromSeed(this.getRawSeed());
         return Codec.encode(Prefix.Private, Buffer.from(kp.secretKey))
     }

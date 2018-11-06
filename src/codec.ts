@@ -14,11 +14,10 @@
  */
 
 import {crc16} from "./crc16";
-import b32enc = require('base32-encode');
-import b32dec = require('base32-decode');
 import ed25519 = require('tweetnacl');
 import {NKeysError, NKeysErrorCode, Prefix, Prefixes} from "./nkeys";
 import * as util from "./util";
+import {base32} from "./base32";
 
 
 export interface SeedDecode {
@@ -29,7 +28,7 @@ export interface SeedDecode {
 export class Codec {
     static toArrayBuffer: util.ToArrayBuffer = util.toArrayBuffer();
 
-    static encode(prefix: Prefix, src: Buffer): string {
+    static encode(prefix: Prefix, src: Buffer): Buffer {
         if(! Buffer.isBuffer(src)) {
             throw new NKeysError(NKeysErrorCode.SerializationError);
         }
@@ -41,7 +40,7 @@ export class Codec {
         return Codec._encode(false, prefix, src);
     }
 
-    static encodeSeed(role: Prefix, src: Buffer): string {
+    static encodeSeed(role: Prefix, src: Buffer): Buffer {
         if(! Prefixes.isValidPublicPrefix(role)) {
             throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
         }
@@ -55,7 +54,7 @@ export class Codec {
         return Codec._encode(true, role, src);
     }
 
-    static decode(expected: Prefix, src: string): Buffer {
+    static decode(expected: Prefix, src: Buffer): Buffer {
         if(! Prefixes.isValidPrefix(expected)) {
             throw new NKeysError(NKeysErrorCode.InvalidPrefixByte);
         }
@@ -66,7 +65,7 @@ export class Codec {
         return raw.slice(1);
     }
 
-    static decodeSeed(src: string): SeedDecode {
+    static decodeSeed(src: Buffer): SeedDecode {
         let raw = Codec._decode(src);
         let prefix = Codec._decodePrefix(raw);
         if (prefix[0] != Prefix.Seed) {
@@ -79,7 +78,7 @@ export class Codec {
     }
 
     // unsafe encode no prefix/role validation
-    static _encode(seed: boolean, role: Prefix, payload: Buffer): string {
+    static _encode(seed: boolean, role: Prefix, payload: Buffer): Buffer {
         // offsets for this token
         let payloadOffset = seed ? 2 : 1;
         let payloadLen = payload.byteLength;
@@ -101,26 +100,19 @@ export class Codec {
         let checksum = crc16.checksum(raw.slice(0,checkOffset));
         raw.writeUInt16LE(checksum, checkOffset);
 
-        // generate a string
-        // generate a base32 string - remove the padding
-        let str = b32enc(Codec.toArrayBuffer(raw), 'RFC3548');
-        str = str.replace(/=+$/, '');
-        return str
+        return base32.encode(raw);
     }
 
     // unsafe decode - no prefix/role validation
-    static _decode(src: string): Buffer {
-        let buf: ArrayBuffer;
-        try{
-            buf = b32dec(src, 'RFC3548');
-        }
-        catch(ex) {
-            throw new NKeysError(NKeysErrorCode.InvalidEncoding, ex);
-        }
-
-        let raw = Buffer.from(buf);
-        if (raw.byteLength < 4) {
+    static _decode(src: Buffer): Buffer {
+        if (src.byteLength < 4) {
             throw new NKeysError(NKeysErrorCode.InvalidEncoding);
+        }
+        let raw: Buffer;
+        try {
+            raw = base32.decode(src);
+        } catch(ex) {
+            throw new NKeysError(NKeysErrorCode.InvalidEncoding, ex);
         }
 
         let checkOffset = raw.byteLength - 2;

@@ -42,8 +42,6 @@
     "typescript": "^3.0.3"
   },
   "dependencies": {
-    "base32-decode": "^1.0.0",
-    "base32-encode": "^1.0.0",
     "npm": "^6.4.1",
     "tweetnacl": "^1.0.0"
   },
