@@ -46,7 +46,7 @@ export function createServer(): KeyPair {
     return createPair(Prefix.Server);
 }
 
-export function fromPublic(src: string): KeyPair {
+export function fromPublic(src: Buffer): KeyPair {
     let raw = Codec._decode(src);
     let prefix = Prefixes.parsePrefix(raw.readUInt8(0));
     if (Prefixes.isValidPublicPrefix(prefix)) {
@@ -55,7 +55,7 @@ export function fromPublic(src: string): KeyPair {
     throw new NKeysError(NKeysErrorCode.InvalidPublicKey);
 }
 
-export function fromSeed(src: string): KeyPair {
+export function fromSeed(src: Buffer): KeyPair {
     Codec.decodeSeed(src);
     // if we are here it decoded
     return new KP(src);
@@ -69,27 +69,27 @@ export interface KeyPair {
      * @returns {Promise<string>}
      * @throws NKeysError
      */
-    getPublicKey(): string;
+    getPublicKey(): Buffer;
 
     /**
      * Returns the private key associated with the KeyPair
-     * @returns {Promise<string>}
+     * @returns Buffer
      * @throws NKeysError
      */
-    getPrivateKey(): string;
+    getPrivateKey(): Buffer;
 
     /**
      * Returns the PrivateKey's seed.
-     * @returns {Promise<string>}
+     * @returns Buffer
      * @throws NKeysError
      */
-    getSeed() : string;
+    getSeed() : Buffer;
 
     /**
      * Returns the digital signature of signing the input with the
      * the KeyPair's private key.
      * @param {Buffer} input
-     * @returns {Promise<Buffer>}
+     * @returns Buffer
      * @throws NKeysError
      */
     sign(input: Buffer): Buffer;
@@ -98,7 +98,7 @@ export interface KeyPair {
      * Returns true if the signature can be verified with the KeyPair
      * @param {Buffer} input
      * @param {Buffer} sig
-     * @returns {Promise<boolean>}
+     * @returns {boolean}
      * @throws NKeysError
      */
     verify(input: Buffer, sig: Buffer) : boolean;

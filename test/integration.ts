@@ -14,7 +14,7 @@
  */
 
 import test from "ava";
-import {createAccount, fromPublic, fromSeed, Prefix} from "../src/nkeys";
+import {fromPublic, fromSeed, Prefix} from "../src/nkeys";
 import {Codec} from '../src/codec';
 
 
@@ -27,21 +27,12 @@ let data = {
 };
 
 test('verify', (t) => {
-    let kp = createAccount();
-    let sk = kp.getSeed();
-    let privateKey = kp.getPrivateKey();
-    let publicKey = kp.getPublicKey();
-
-    t.log("seed", sk);
-    t.log("private", privateKey);
-    t.log("public", publicKey);
-
-    // t.plan(2);
-    let pk = fromPublic(data.public_key);
+    t.plan(2);
+    let pk = fromPublic(Buffer.from(data.public_key));
     let ok = pk.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
 
-    let seed = fromSeed(data.seed);
+    let seed = fromSeed(Buffer.from(data.seed));
     ok = seed.verify(Buffer.from(data.nonce), Buffer.from(data.sig, 'base64'));
     t.true(ok);
 });
@@ -58,10 +49,10 @@ test('encoded seed returns stable values albertor', (t) => {
         };
 
     let v = Codec.encodeSeed(Prefix.User, Buffer.from("albertoralbertoralbertoralbertor"));
-    t.is(v, data.seed);
+    t.is(v.toString('ascii'), data.seed);
 
     var kp = fromSeed(v)
-    t.is(kp.getSeed(), data.seed, "seed");
-    t.is(kp.getPublicKey(), data.public_key, "public key");
-    t.is(kp.getPrivateKey(), data.private_key, "private key");
+    t.is(kp.getSeed().toString('ascii'), data.seed, "seed");
+    t.is(kp.getPublicKey().toString('ascii'), data.public_key, "public key");
+    t.is(kp.getPrivateKey().toString('ascii'), data.private_key, "private key");
 });

@@ -37,8 +37,8 @@ test('Should fail to encode with invalid prefix', (t) => {
 test('Should encode and decode', (t) => {
     let rand = crypto.randomBytes(32);
     let enc = Codec.encode(Prefix.Private, rand);
-    t.is(typeof enc, 'string');
-    t.is(enc[0], 'P');
+    t.true(Buffer.isBuffer(enc));
+    t.is(enc[0], 'P'.charCodeAt(0));
 
     let dec = Codec._decode(enc);
     t.true(Buffer.isBuffer(dec));
@@ -56,9 +56,9 @@ test('Should fail to encode seeds that are not 32 bytes', (t) => {
 test('Should encode seed and decode account', (t) => {
     let rand = crypto.randomBytes(32);
     let enc = Codec.encodeSeed(Prefix.Account, rand);
-    t.is(typeof enc, 'string');
-    t.is(enc[0], 'S');
-    t.is(enc[1], 'A');
+    t.true(Buffer.isBuffer(enc));
+    t.is(enc[0], 'S'.charCodeAt(0));
+    t.is(enc[1], 'A'.charCodeAt(0));
 
     let dec = Codec.decode(Prefix.Seed, enc);
     t.true(Buffer.isBuffer(dec));
@@ -69,9 +69,9 @@ test('Should encode seed and decode account', (t) => {
 test('Should encode and decode seed', (t) => {
     let rand = crypto.randomBytes(32);
     let enc = Codec.encodeSeed(Prefix.Account, rand);
-    t.is(typeof enc, 'string');
-    t.is(enc[0], 'S');
-    t.is(enc[1], 'A');
+    t.true(Buffer.isBuffer(enc));
+    t.is(enc[0], 'S'.charCodeAt(0));
+    t.is(enc[1], 'A'.charCodeAt(0));
 
     let seed = Codec.decodeSeed(enc);
     t.true(Buffer.isBuffer(seed.buf));
@@ -81,13 +81,13 @@ test('Should encode and decode seed', (t) => {
 
 test('should fail to decode non-base32', (t) => {
     t.throws(() => {
-        Codec.decodeSeed("foo!");
+        Codec.decodeSeed(Buffer.from("foo!"));
     }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
 test('should fail to short string', (t) => {
     t.throws(() => {
-        Codec.decodeSeed("OK");
+        Codec.decodeSeed(Buffer.from("OK"));
     }, {code: NKeysErrorCode.InvalidEncoding});
 });
 
@@ -115,7 +115,6 @@ test('decodeSeed with invalid role should fail', (t) => {
     let badRole = 23 << 3; // X
     //@ts-ignore
     let badSeed = Codec._encode(true, badRole, Buffer.from(rawSeed));
-    t.log(badSeed);
     t.throws(() => {
         //@ts-ignore
         Codec.decodeSeed(badSeed);

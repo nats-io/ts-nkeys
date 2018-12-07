@@ -21,21 +21,21 @@ import {KeyPair, NKeysError, NKeysErrorCode} from "./nkeys";
  * KeyPair capable of verifying only
  */
 export class PublicKey implements KeyPair {
-    publicKey: string;
+    publicKey: Buffer;
 
-    constructor(publicKey: string) {
+    constructor(publicKey: Buffer) {
         this.publicKey = publicKey;
     }
 
-    getPublicKey(): string {
+    getPublicKey(): Buffer {
         return this.publicKey;
     }
 
-    getPrivateKey(): string {
+    getPrivateKey(): Buffer {
         throw new NKeysError(NKeysErrorCode.PublicKeyOnly);
     }
 
-    getSeed(): string {
+    getSeed(): Buffer {
         throw new NKeysError(NKeysErrorCode.PublicKeyOnly);
     }
 
