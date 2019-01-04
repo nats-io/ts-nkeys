@@ -28,32 +28,26 @@ npm install ts-nkeys
     // Seeds are strings, and start with the letter 'S'. 
     // Seeds need to be kept safe and never shared.
     let seed = user.getSeed();
-    t.is(typeof seed, 'string');
-    t.is(seed[0], 'S');
+    t.true(Buffer.isBuffer(seed));
+    t.is(seed[0], 'S'.charCodeAt(0));
     
     // the second letter in the seed represents its type:
     // `U` for user, 
     // `A` for account, 
     // `C` for cluster
     // `N` for severs
-    t.is(seed[1], 'U');
+    t.is(seed[1], 'U'.charCodeAt(0));
 
     // public keys can be shared and can be used to verify signed content
     let publicKey = user.getPublicKey();
-    t.is(typeof publicKey, 'string');
+    t.true(Buffer.isBuffer(publicKey));
     // first letter represents the type of public key
     // `U` for user, 
     // `A` for account, 
     // `C` for cluster
     // `N` for severs
-    t.is(publicKey[0], 'U');
+    t.is(publicKey[0], 'U'.charCodeAt(0));
 
-    // private keys like seeds shouldn't be shared. In most cases you should
-    // just save the seed.
-    let privateKey = user.getPrivateKey();
-    t.is(typeof privateKey, 'string');
-    // private keys start with the letter 'P'.
-    t.is(privateKey[0], 'P');
 
     // To sign data
     let data = Buffer.from("HelloWorld");
@@ -71,5 +65,5 @@ npm install ts-nkeys
     t.true(sk.verify(data, sig));
     // and can be used to sign
     let sig2 = sk.sign(data);
-    t.true(sk.verify(data, sig))
+    t.true(sk.verify(data, sig));
 ```

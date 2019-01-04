@@ -18,7 +18,7 @@ import {KP} from "./kp";
 import {PublicKey} from "./public";
 import {Codec} from "./codec";
 
-export const VERSION = "1.0.4";
+export const VERSION = "1.0.10";
 
 export function createPair(prefix: Prefix): KeyPair {
     let rawSeed = ed25519.randomBytes(32).buffer;
