@@ -86,7 +86,7 @@ export class Codec {
         let cap = payloadOffset + payloadLen + checkLen;
         let checkOffset = payloadOffset + payloadLen;
 
-        let raw = new Buffer(cap);
+        let raw = Buffer.alloc(cap);
         // make the prefixes human readable when encoded
         if (seed) {
             let encodedPrefix = Codec._encodePrefix(Prefix.Seed, role);
@@ -130,7 +130,7 @@ export class Codec {
         // bit manipulation to setup for base32 encoding which takes 5 bits at a time.
         let b1 = kind | (role >> 5);
         let b2 = (role & 31) << 3; // 31 = 00011111
-        return new Buffer([b1, b2]);
+        return Buffer.from([b1, b2]);
     }
 
     static _decodePrefix(raw: Buffer) : Uint8Array {

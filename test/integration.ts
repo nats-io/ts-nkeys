@@ -51,7 +51,7 @@ test('encoded seed returns stable values albertor', (t) => {
     let v = Codec.encodeSeed(Prefix.User, Buffer.from("albertoralbertoralbertoralbertor"));
     t.is(v.toString('ascii'), data.seed);
 
-    var kp = fromSeed(v)
+    var kp = fromSeed(v);
     t.is(kp.getSeed().toString('ascii'), data.seed, "seed");
     t.is(kp.getPublicKey().toString('ascii'), data.public_key, "public key");
     t.is(kp.getPrivateKey().toString('ascii'), data.private_key, "private key");

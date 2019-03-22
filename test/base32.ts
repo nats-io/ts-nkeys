@@ -17,29 +17,29 @@ import test, {ExecutionContext} from "ava";
 import {base32} from "../src/base32";
 
 
-function base32Macro(t: ExecutionContext , input: string, expected: string) {
+function base32Macro(t: ExecutionContext , input: Buffer|string, expected: string) {
     t.plan(2);
 
     let enc = base32.encode(Buffer.from(input));
     t.deepEqual(enc, Buffer.from(expected));
 
-    let dec = base32.decode(Buffer.from(expected))
+    let dec = base32.decode(Buffer.from(expected));
     t.deepEqual(dec, Buffer.from(input))
 }
 
 // Tests copied from go library
 // https://tools.ietf.org/html/rfc4648 and wikipedia ported
-test('empty string', base32Macro, "", "", true);
-test('f', base32Macro, Buffer.from("f"), "MY", true);
-test('fo', base32Macro, Buffer.from("fo"), "MZXQ", true);
-test('foo', base32Macro, Buffer.from("foo"), "MZXW6", true);
-test('foob', base32Macro, Buffer.from("foob"), "MZXW6YQ", true);
-test('fooba', base32Macro, Buffer.from("fooba"), "MZXW6YTB", true);
-test('foobar', base32Macro, Buffer.from("foobar"), "MZXW6YTBOI", true);
-test('sure.', base32Macro, Buffer.from("sure."), "ON2XEZJO", true);
-test('sure', base32Macro, Buffer.from("sure"), "ON2XEZI", true);
-test('sur', base32Macro, Buffer.from("sur"), "ON2XE", true);
-test('su', base32Macro, Buffer.from("su"), "ON2Q", true);
-test('leasure.', base32Macro, Buffer.from("leasure."), "NRSWC43VOJSS4", true);
-test('easure.', base32Macro, Buffer.from("easure."), "MVQXG5LSMUXA", true);
-test('asure.', base32Macro, Buffer.from("asure."), "MFZXK4TFFY", true);
+test('empty string', base32Macro, "", "");
+test('f', base32Macro, Buffer.from("f"), "MY");
+test('fo', base32Macro, Buffer.from("fo"), "MZXQ");
+test('foo', base32Macro, Buffer.from("foo"), "MZXW6");
+test('foob', base32Macro, Buffer.from("foob"), "MZXW6YQ");
+test('fooba', base32Macro, Buffer.from("fooba"), "MZXW6YTB");
+test('foobar', base32Macro, Buffer.from("foobar"), "MZXW6YTBOI");
+test('sure.', base32Macro, Buffer.from("sure."), "ON2XEZJO");
+test('sure', base32Macro, Buffer.from("sure"), "ON2XEZI");
+test('sur', base32Macro, Buffer.from("sur"), "ON2XE");
+test('su', base32Macro, Buffer.from("su"), "ON2Q");
+test('leasure.', base32Macro, Buffer.from("leasure."), "NRSWC43VOJSS4");
+test('easure.', base32Macro, Buffer.from("easure."), "MVQXG5LSMUXA");
+test('asure.', base32Macro, Buffer.from("asure."), "MFZXK4TFFY");
