@@ -48,7 +48,7 @@ export class base32 {
         let byte = 0;
         let j = 0;
         let a = new Uint8Array(src);
-        let out = new Buffer(a.byteLength * 5 / 8 | 0);
+        let out = Buffer.alloc(a.byteLength * 5 / 8 | 0);
         for(let i=0; i < a.byteLength; i++) {
             let v = String.fromCharCode(a[i]);
             let vv = base32.alphabet.indexOf(v);
