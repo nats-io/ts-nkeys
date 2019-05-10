@@ -20,10 +20,12 @@ import {base32} from "../src/base32";
 function base32Macro(t: ExecutionContext , input: Buffer|string, expected: string) {
     t.plan(2);
 
+    //@ts-ignore
     let enc = base32.encode(Buffer.from(input));
     t.deepEqual(enc, Buffer.from(expected));
 
     let dec = base32.decode(Buffer.from(expected));
+    //@ts-ignore
     t.deepEqual(dec, Buffer.from(input))
 }
 
