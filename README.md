@@ -67,3 +67,13 @@ npm install ts-nkeys
     let sig2 = sk.sign(data);
     t.true(sk.verify(data, sig));
 ```
+
+
+## Supported Node Versions
+
+Our support policy for Nodejs versions follows [Nodejs release support]( https://github.com/nodejs/Release).
+We will support and build node-nats on even-numbered Nodejs versions that are current or in LTS.
+
+## License
+
+Unless otherwise noted, the NATS source files are distributed under the Apache Version 2.0 license found in the LICENSE file.
