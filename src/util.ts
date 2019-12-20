@@ -45,6 +45,9 @@ function node8(buf: Buffer): ArrayBuffer {
 }
 
 function parseNodeVersion() : number {
+    if (typeof process === 'undefined' || typeof process.version === 'undefined') {
+        return 0;
+    }
     let ma = process.version.match(/^v(\d+).+/i);
     if(ma && ma.length > 1) {
         return parseInt(ma[1], 10);
