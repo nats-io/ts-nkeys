@@ -32,22 +32,24 @@
   "author": "The NATS Authors",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/node": "^12.7.11",
-    "ava": "^1.4.1",
-    "coveralls": "^3.0.6",
-    "dependency-check": "^3.4.1",
+    "@types/node": "^13.1.4",
+    "ava": "^2.4.0",
+    "coveralls": "^3.0.9",
+    "dependency-check": "^4.1.0",
     "if-node-version": "^1.1.1",
-    "nyc": "^14.1.1",
+    "nyc": "^15.0.0",
     "set-value": "^3.0.1",
-    "ts-node": "^8.4.1",
-    "typescript": "^3.6.3"
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.4"
   },
   "dependencies": {
     "tweetnacl": "^1.0.1"
   },
   "ava": {
-    "failFast": false,
-    "require": [],
+    "failFast": true,
+    "require": [
+      "./lib/test/__ava_fix.js"
+    ],
     "files": [
       "./lib/test/**/*.js",
       "!./lib/test/helpers/**/*.js"
