@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The NATS Authors
+ * Copyright 2018-2020 The NATS Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import ed25519 = require('tweetnacl')
+import ed25519 = require('tweetnacl');
 import {KP} from "./kp";
 import {PublicKey} from "./public";
 import {Codec} from "./codec";
 
-export const VERSION = "1.0.14";
+export const VERSION = "1.0.16";
 
 export function createPair(prefix: Prefix): KeyPair {
     let rawSeed = ed25519.randomBytes(32).buffer;
