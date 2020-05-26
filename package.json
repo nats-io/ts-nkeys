@@ -28,13 +28,13 @@
   "author": "The NATS Authors",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/node": "^13.7.4",
-    "ava": "^2.4.0",
-    "coveralls": "^3.0.9",
+    "@types/node": "^14.0.5",
+    "ava": "^3.8.1",
+    "coveralls": "^3.1.0",
     "dependency-check": "^4.1.0",
-    "nyc": "^15.0.0",
-    "ts-node": "^8.6.2",
-    "typescript": "^3.8.2"
+    "nyc": "^15.0.1",
+    "ts-node": "^8.10.1",
+    "typescript": "^3.9.3"
   },
   "dependencies": {
     "tweetnacl": "^1.0.3"
@@ -47,9 +47,6 @@
     "files": [
       "./lib/test/**/*.js",
       "!./lib/test/helpers/**/*.js"
-    ],
-    "sources": [
-      "**/*.js"
     ]
   },
   "nyc": {
