@@ -5,6 +5,7 @@ This file lists the dependencies used in this repository.
 | Dependency | License |
 |-|-|
 | tweetnacl@1.0.3 | Unlicense |
+
 | Dev Deps (actual fanout: 452 libs) |  |
 | @types/node@13.1.7 | MIT |
 | ava@2.4.0 | MIT |
